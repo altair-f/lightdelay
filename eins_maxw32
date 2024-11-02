@@ -1,0 +1,2212 @@
+(* !!! for 'models' only! *)
+
+
+
+SetOptions[$FrontEnd, Background -> GrayLevel[0.2], FontColor -> GrayLevel[1], FontSize -> 18];
+(*SetOptions[$FrontEnd, Background -> GrayLevel[1], FontColor -> GrayLevel[0], FontSize -> 18];*)
+SetOptions[OpenWrite["texoutput.tex"],PageWidth->Infinity];
+SetOptions[OpenWrite["mathoutput"],PageWidth->Infinity];
+
+(* <code> *) dadate=Date[];
+(*
+OF[]>>varlist;
+
+If[MemberQ[FileNames[], "mathoutputBackUp"],DeleteFile["mathoutputBackUp"]];						(* 08.06.2024 *)
+oldVarList=Names["Global`*"];
+If[MemberQ[FileNames[], "mathoutput"],<<mathoutput;CopyFile["mathoutput","mathoutputBackUp"]];
+newVarList=Complement[Names["Global`*"],oldVarList];
+Print[" ============= New technology testing ============= "];
+Print[newVarList];							
+
+SetAttributes[BB, HoldAll];
+BB[xx_,yy__]:=Block[{},Print[];
+	
+	If[!ValueQ[xx]||noBackup===1,																	(* 10.06.2024 *)
+		Print[Unevaluated[xx]," was calculated first once"];xx=yy,
+		Print[Unevaluated[xx],"  already exists"]
+	];
+];
+*)
+
+BB=Set;
+
+(* this program demands some metric tensor before it *)
+
+If[!dontclear===1, Print["General case"]; Clear["`*"]];    dontclear=.;
+
+If[!ValueQ[VG],Print["    Write, please, some metric tensor!"];Abort[]];
+If[!ValueQ[sim],Print[" No simplification helper rules defined"];sim={}];
+If[!ValueQ[antisim],Print["No antisims"];antisim={}];
+
+
+var=x/@{0,1,2,3};
+vary=var/.x->y;
+
+
+SF=StringForm;
+OF=OutputForm;
+IF=InputForm;
+TF=TraditionalForm;
+SeqF=SequenceForm;
+SB=Subscript;
+SPB=Subsuperscript;
+SPS=Superscript;
+FS=FullSimplify;
+EA=ExpandAll;
+ToS=ToString;
+
+
+
+(* ------------------------- BEAUTY ----------------------------*)
+
+If[!ValueQ[subscribed],subscribed={a,c,t,u,l,fi,A,F,Fx,et,hi,psi,xi,Jdown,FdownF}];
+If[!ValueQ[superscribed],superscribed={x,y,Fup,Aup,J,Jx}];
+If[!ValueQ[grecletter],grecletter={al,be,ga,de,ka,ep,la,mu,nu,ro,si,k,A,B}~Cases~_Symbol];					(* 19.09.2024 *)
+
+grecletter=DeleteCases[grecletter,jt_Integer];	(* a piece of "POLUNDRA" from june 2017 *)
+subscribed=DeleteCases[subscribed,jt_Integer];	(* a piece of "POLUNDRA" from june 2017 *)
+
+(* 'stf' is a set of diff. indexes with a comma, 'ssf' is a set of funct. indexes *)
+
+stf[xt_]:= Block[{a,i,k,st}, st=","; a=List @@ xt[[0,0]]; Do[st=st <> ToS @ xt[[i,1]],{i,Length[a]},{k,a[[i]]}]; st];				(* 08.02.2024 *)
+ssf[xt_]:=StringJoin @@ ToS /@ xt[[0,1]];
+
+SetAttributes[FoF, HoldFirst];																									(* 19.09.2024 *)
+FoF[xx_, yy_] := Block[{}, If[!ValueQ[xx],Format[xx] := yy; Format[xx, TeXForm] := yy,	Print["--- warning!   ",yy," = ",xx]]];
+
+Format[ppp:Derivative[__][(yt_/;subscribed~MemberQ~yt)@__]@__] := SB[yt, ssf[ppp] <> stf[ppp]];										(* 09.04.2024 *)
+Format[ppp:Derivative[__][(yt_/;subscribed~MemberQ~yt)@__]@__, TeXForm] := SB[yt, ssf[ppp] <> stf[ppp]];
+(*FoF[ppp:(Derivative[__][(yt_/;subscribed~MemberQ~yt)@__]@__),  SB[yt, ssf[ppp] <> stf[ppp]]   ];*)
+Format[ppp:Derivative[__][(yt_/;MemberQ[superscribed,yt])[__]][__]] := SPB[yt, " " <> stf[ppp], ssf[ppp]];
+Format[ppp:Derivative[__][(yt_/;MemberQ[superscribed,yt])[__]][__], TeXForm] := SPB[yt, " " <> stf[ppp], ssf[ppp]];
+
+WPQ[ex__] := ex//.{
+	
+	Sum[it__[k]jt__[k], {k, 3}] -> SB[it, "n"]SPS[jt, "n"],
+	Sum[it__[k]jt__[k][xx_], {k,2,3}] -> SB[it, "p"]Vupk[jt,xx],
+
+	g[2,3][xx__]jt__[2]jt__[3]  -> (Guppq[xx]SB[jt,"p"]SB[jt,"q"] - g[2,2][xx]jt[2]^2 - g[3,3][xx]jt[3]^2)/2,
+	
+	
+	2*la[2]*g[2, 2][x[0]] + 2*la[3]*g[2, 3][x[0]] ->2 Gpqlaq[2,xx]SB[la,"q"],
+	2*la[2]*g[2, 3][x[0]] + 2*la[3]*g[3, 3][x[0]] ->2 Gpqlaq[3,xx]SB[la,"q"],
+	
+	Gdown[2,3][xx__]jt__[2]jt__[3]->(Gdownpq[xx]SPS[jt,"p"]SPS[jt,"q"]-Gdown[2,2][xx]jt[2]^2-Gdown[3,3][xx]jt[3]^2)/2,
+	Gdown[2,3]'[xx__]jt__[2]jt__[3]->(Gdownpq[xx]'SPS[jt,"p"]SPS[jt,"q"]-Gdown[2,2]'[xx]jt[2]^2-Gdown[3,3]'[xx]jt[3]^2)/2
+	
+};
+
+w={};
+
+Sfitjt:=SF["````",it,jt];													(* 23.05.2024 *)
+
+al  ~FoF~\[Alpha];
+be  ~FoF~\[Beta];
+ga  ~FoF~\[Gamma];
+de  ~FoF~\[Delta];
+ep  ~FoF~\[Epsilon];
+eps ~FoF~\[CurlyEpsilon];
+et  ~FoF~\[Eta];
+ka  ~FoF~\[Kappa];
+la  ~FoF~\[Lambda];
+La  ~FoF~\[CapitalLambda];
+mu  ~FoF~\[Mu];
+nu  ~FoF~\[Nu];
+xi  ~FoF~\[Xi];
+pi  ~FoF~\[Pi];
+ro  ~FoF~\[Rho];
+si  ~FoF~\[Sigma];
+ta  ~FoF~\[Tau];
+th  ~FoF~\[Theta];
+fi  ~FoF~\[Phi];
+hi  ~FoF~\[Chi];
+psi ~FoF~\[Psi];
+Om  ~FoF~\[Omega];
+Del ~FoF~\[CapitalDelta];
+
+FoF[ Aup ,"A"];
+FoF[ Jx ,"J"];
+FoF[ Jdown ,"J"];
+FoF[ Fup ,"F"];
+FoF[ FdownF ,"F"];
+FoF[ Gdown ,"G"];
+FoF[ GG ,"G"];
+FoF[ gdown ,"g"];
+FoF[ Fx ,"F"];
+FoF[ GPQ',SB["Q",",0"]];
+FoF[ GPQ,"Q"];
+FoF[ cc ,"c"];
+FoF[ ee ,"e"];
+FoF[ ud ,"u"];
+FoF[ MM ,"m"];
+
+FoF[ xS @it_, SPB["x","S",SF[" ``",it]]];
+FoF[ yS @it_, SPB["y","S",SF[" ``",it]]];
+FoF[ yD @it_, SPB["y","D",SF[" ``",it]]];
+FoF[ xD @it_, SPB["x","D",SF[" ``",it]]];
+
+
+FoF[ #[it_], SB[#, it]]  & /@ grecletter;									(* 30.10.2024 *)
+FoF[ #[it_], SPS[#, it]] & /@ superscribed;									(* 10.04.2024 *)
+FoF[ fi[x[it_]], SB[fi,it]];												(* <- we loose *)
+
+FoF[ # @__,         #]              & /@ {g,GG};							(* 23.05.2024 *)
+FoF[ #[it__]@__,    SPS[#, it]]     & /@ {Aup,J,Jx,b};
+FoF[ #[it_,jt_]@__, SPS[#, Sfitjt]] & /@ {Fup,g,G};
+FoF[ #[it_,jt_],    SPS[#, Sfitjt]] & /@ {Fup};
+FoF[ #[it__],       SPS[#, it]]     & /@ {u};
+FoF[ #[it__],       SB [#, it]]     & /@ {cc,ud,Jdown};
+FoF[ #[it__]@__,    SB [#, it]]     & /@ {A,hi,xi,et,psi,Jdown};
+FoF[ #[it_,jt_],    SB [#, Sfitjt]] & /@ {F,ka};
+FoF[ #[it_,jt_]@__, SB [#, Sfitjt]] & /@ {F,Fx,gdown,Gdown,FdownF};
+
+FoF[Guppq[it_], SPS["g","pq"]];
+FoF[Gdownpq[it_],SB["g","pq"]];
+FoF[Gpqlaq[it_,xx_],SPS["g",SeqF["q",it]]];
+FoF[Vupk[jt_,xx_],SPS[jt, "p"]];
+
+
+FoF[ dddx @it_, SPS["dx",it]];
+
+FoF[ Jprivil[it_], SPB["J","priv",it]];
+FoF[ Jsync[it_], SPB["J","sync",it]];
+FoF[ DalA[it_], SeqF[\[Square]SB["A",it]] ];
+FoF[ DalAup[it_], SeqF[\[Square]SPS["A",it]] ];
+
+Unprotect[Abs, DiscreteDelta];												(* 09.04.2024 *)
+FoF[ Abs[it__], SF["|``|",it]];
+FoF[ DiscreteDelta,de];
+Protect[Abs, DiscreteDelta];
+
+FoF[ it__'  @jt__ , it[jt]'];
+FoF[ it__''  @jt__ , it[jt]''];
+FoF[ it__'''  @jt__ , it[jt]'''];
+
+
+FoF[ #[x[0]],        SB[#, "0"]]     & /@ {a,b,c};
+FoF[ #[xD[0]],       SB[#, "D"]]     & /@ {a,b,c};
+FoF[ #[xS[0]],       SB[#, "S"]]     & /@ {a,b,c};
+
+(*--------------------------- ATTENTION MESSAGE --------------------------------------------*)
+
+attentioncounter=0;
+
+ATTENTION[message_]:=Block[{},
+	attentioncounter++;
+	Print[];Print[];Print[];
+	Print["             ===== ",attentioncounter,".  ATTENTION!!! ",message,"    ====="];
+	Print[];Print[];Print[];
+];
+
+(*--------------------------- CONVOLUTIONS -------------------------------------------------*)
+(*
+convol={
+	Sum[vg[al, be]D[F[1, al] @@ var, x[be]], {al, 0, 3}, {be, 0, 3}]->SumGijF1ij//FS
+	};
+
+FoF[SumGijF1ij,SequenceForm[SPS["g",SequenceForm[al,be]],SB["F",SequenceForm[1,al,",",be]]]];
+*)
+w1={ep^2->1,1/ep->ep};   w1=DeleteCases[w1,jt_Integer->it_];  (* short epsylon-operations *)
+
+(*============================= PREAMBLES =================================================*)
+
+texPreamble:=Block[{},
+
+	OF["\\documentclass{report}				"]>>texoutput.tex;
+	OF["%\\usepackage[russian]{babel}       	"]>>>texoutput.tex;
+	OF["\\usepackage[utf8]{inputenc}       	"]>>>texoutput.tex;
+	OF["\\usepackage{amssymb}              	"]>>>texoutput.tex;
+	OF["%\\usepackage{amsmath}             	"]>>>texoutput.tex;
+	OF["\\usepackage{xcolor}               	"]>>>texoutput.tex;
+	OF["\\topmargin=-1.0cm                 	"]>>>texoutput.tex;
+	OF["\\oddsidemargin=-0.5cm             	"]>>>texoutput.tex;
+	OF["\\textheight=24 truecm             	"]>>>texoutput.tex;
+	OF["\\textwidth=174 truemm             	"]>>>texoutput.tex;
+	OF["\\def\baselinestretch{1.2}         	"]>>>texoutput.tex;
+	OF["\\newcommand{\bb}{\begin{equation}}	"]>>>texoutput.tex;
+	OF["\\newcommand{\ee}{\end{equation}}  	"]>>>texoutput.tex;
+	OF["\\newcommand{\Mfunction}{}		    "]>>>texoutput.tex;
+	OF["\\newcommand{\Muserfunction}{}		"]>>>texoutput.tex;
+	OF["\\newcommand{\Mvariable}{}    		"]>>>texoutput.tex;
+	OF["\\newcommand{\RawWedge}{^}    		"]>>>texoutput.tex;
+	(*OF["\\newcommand{\EmptyDownTriangle}{\\nabla}"]>>>texoutput.tex;*)
+	OF["\\renewcommand{\$}{$}	    		"]>>>texoutput.tex;
+
+	
+	OF["\begin{document}"]>>>texoutput.tex;
+	
+	OF["(* \n
+		Definitions: \n\n
+		'ddet' - a determinant of the metric tensor,\n
+		'SS' - an action,\n
+		'hamjac' - left part of Hamilton-Jacoby Eq, where phi[0] is unknown,\n
+		'dsolvhamjac' - the solution of Hamilton-Jacoby Eq relative phi[0],\n
+	*)"]>>mathoutput;
+	OF[""]>>>mathoutput;
+
+];
+
+texPreamble;
+
+(*============================= OUTPUT FUNCTIONS =================================================*)
+
+SetAttributes[varPrint, HoldAll];
+varPrint[xx__]:=Block[{}, Print["variable: ",Unevaluated[xx]]; Unevaluated[xx]>>>varlist;];				(* 16.06.2024, a slow success  *)
+
+(* You can define a 'equationLabel' before this funct. *)
+
+texPrint[prefix_,expression_,suffix_]:=Block[{},
+
+	If[noTex=!=1,
+		OF["\\bb"]>>>texoutput.tex;
+		If[prefix =!= "",prefix//TeXForm>>>texoutput.tex];
+		expression//TeXForm>>>texoutput.tex;
+		If[suffix =!= "",suffix//TeXForm>>>texoutput.tex];
+		If[ValueQ[equationLabel],OF[SF["\\label{``}",equationLabel]]>>>texoutput.tex;equationLabel=.];
+		OF["\\ee"]>>>texoutput.tex;
+	];
+];
+
+SlashRemover[xx_]:=If[xx[[0]]===String,StringReplace[xx,{"\\"->""}],xx];
+
+texHeadPrint[header_]:=Block[{},
+
+	Print[];	
+	Print["-----",SlashRemover[header],"------"];
+	header//TeXForm>>>texoutput.tex;
+	OF[""]>>>mathoutput;
+	OF[SF["(* ---- `` ----*)",header]]>>>mathoutput;
+];
+
+(* !!! for lists beginned at 1 *)	(* syntax example: 'expr, " = 0", FS' - 2-th must be a string, 3-th - action like FS, EA, TF etc. *)
+
+SetAttributes[texListPrint, HoldAll];
+texListPrint[list_,epiplya___String|epiplya___SequenceForm,actioplya___Symbol|actioplya___List]:=Block[{},varPrint[list];
+	texMatrixPrint[list,epiplya,actioplya]];
+
+(* !!! for cycling 'Do' usage! without 'varPrint' !!! *)
+
+
+
+SetAttributes[texMatrixPrint, HoldFirst];
+texMatrixPrint[list_,epiplya___String|epiplya___SequenceForm,actioplya___Symbol|actioplya___List]:=Block[{},
+
+	If[ValueQ[prolog],prolog=SequenceForm[prolog, " = "],prolog=""];
+	If[epiplya[[0]]===0,epilog="",epilog=epiplya];
+	Which[actioplya[[0]]===0,action=Identity,  actioplya[[0]]===Symbol,action=actioplya,  ListQ[actioplya],action=Last[ComposeList[actioplya, #]]& ];
+	If[list[[0]]===List,
+		Do[Print[i,".   ",prolog,list[[i]]//action,epilog];             texPrint[prolog,list[[i]]//action,epilog],{i,Length[list]}],
+		Print[SlashRemover[prolog],list//action,SlashRemover[epilog]];  texPrint[prolog,list//action,epilog]
+	];
+	If[noMat=!=1,Definition[list]>>>mathoutput];
+	Clear[noTex,noMat,prolog,epilog,action];
+];
+
+
+innerPrint:=Block[{formula},																(* 30.05.2024 *)
+	PostAction; 
+	If[Type=="Vector",formula=Name[i],formula=Name[i,j]];
+	If[{nonZero,formula}=!={1,0},
+		Print[prolog, formula//bebeauty, epilog]; texPrint[texprolog, formula//bebeauty, epilog]]
+];
+
+
+newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
+	If[noTex=!=1,texHeadPrint[Header],Print[Header]];
+	Print["this variable is: ",Name];
+	
+	If[ValueQ[prolog],prolog=SequenceForm[prolog, " = "],prolog=""];						(* empty 'prolog' can be replaced by the 'Enumerate'? *)
+	
+	If[ValueQ[texprolog],texprolog=SequenceForm[texprolog, " = "],texprolog=prolog];										(* 31.05.2024, may be dangerous! *)
+	If[Enumerate==1,If[Type=="Vector",prolog=SequenceForm[i,".   ",prolog],prolog=SequenceForm[i,j,".   ",prolog]]];		(* 03.06.2024, risk *)
+	If[!ValueQ[epilog],epilog=""];
+	Which[!ValueQ[Beauty],bebeauty=Identity,  Beauty[[0]]===Symbol,bebeauty=Beauty,   ListQ[Beauty],bebeauty=Last[ComposeList[Beauty, #]]& ];
+
+	Which[
+		Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
+		Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
+		Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];	Do[Name[j,i]=Name[i,j],{i,0,3},{j,i+1,3}],
+		Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+	];
+	ClearAttributes[Definition,HoldAll]; Definition[Name]>>mathoutput; SetAttributes[Definition,HoldAll];
+	Clear[Header,Name,Type,Action,PostAction,prolog,texprolog,epilog,Beauty,noTex,nonZero,Enumerate];
+];
+
+
+
+(*-------------------  standard 2024 (no n, no w1, no w)      --------------------------*)
+
+OF[" \\section{Metric tensor and interval in privileged CS}"]>>>texoutput.tex;
+
+texHeadPrint[" Recent metric in privileged CS "];
+
+If[ValueQ[ddelt] && ddelt=!=1,
+	VG1=VG ddelt//Simplify; Print[1/ddelt,"  ",VG1//MatrixForm]; VG1=.,
+	Print[SPS["g","ij"]," = ",VG/.sim//MatrixForm];
+	OF["\\bb g^{ij}\\ =\\ \\left("]>>>texoutput.tex;
+	VG/.sim//MatrixForm//TeXForm>>>texoutput.tex;
+	OF["\\right) \\ee"]>>>texoutput.tex;
+	];
+vdet=(Det[VG]//FS); Print["Det|",SPS["g","ij"],"| = ",vdet," ",SF["\[Congruent]"]," ",vdet/.sim," < 0"];
+
+Print["test3"];
+
+BB[ddet, 1/vdet/.sim];										(* first usage 'BB' 08.06.2024 *)
+	prolog=SequenceForm["\\det ", SB["g", "ij"]];
+	texListPrint[ddet," = g < 0"];
+
+sqrtddet~BB~((FS[Sqrt[-ddet],si>0])/.sim);					(* infix form of 'BB' *) 
+	prolog=Sqrt[-g];
+	noTex=1;
+	texListPrint[sqrtddet]; 
+
+NG~BB~((Inverse[VG]//FS)/.sim); Print[SB["g","ij"]," = ",NG]; (*nition[NG]>>mathoutput;*)
+
+Do[ng[i,j]=NG[[i+1,j+1]]; vg[i,j]=VG[[i+1,j+1]],{i,0,3},{j,0,3}];
+
+dssquare=Sum[ng[i,j]dddx[i]dddx[j],{i,0,3},{j,0,3}]~Collect~g[_];
+	OF["\\bb ds^2\\ =\\ "]>>>texoutput.tex;
+	dssquare//TeXForm>>>texoutput.tex;
+	OF["\\ee"]>>>texoutput.tex;
+
+
+standart:=Block[{},
+
+	Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS;
+		(*If[G[i,j,k]=!=0,Print[SPB[\[CapitalGamma],SF["````",i,j],SF["  ``",k]],"  =  ",G[i,j,k]/.w];];*)
+		G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+	
+	Do[R[i,k]=Sum[D[G[i,k,j],x[j]]-D[G[i,j,j],x[k]]+Sum[G[i,k,j]*G[j,m,m],{m,0,3}]-Sum[G[i,j,m]*G[k,m,j],{m,0,3}],{j,0,3}]//EA//Simplify;
+		If[R[i,k]=!=0,Print[SB[R,SF["````",i,k]],"  =  ",R[i,k]]];
+		,{i,0,3},{k,i,3}];
+	Do[R[k,i]=R[i,k],{i,0,2},{k,i+1,3}];
+	
+	RR=Sum[vg[k,m]R[k,m],{k,0,3},{m,0,3}]//Expand//Simplify;
+];
+
+
+(*============================= MAIN =================================================*)
+
+
+
+
+(* ------- maxw 1 pair test ---------------- *)
+(* !!! not in general form *)
+
+maxw1t:=Block[{},
+	Print["-------- maxwell 1 test -------------"];
+	
+	Do[maxw1[i,k,l]=D[F[i,k]@@var,x[l]]+D[F[l,i]@@var,x[k]]+D[F[k,l]@@var,x[i]]//FS;
+	If[maxw1[i,k,l]=!=0,
+		Print[i,k,l,"    ",maxw1[i,k,l]];
+		"\bb">>>texoutput.tex;
+		maxw1[i,k,l]//TeXForm>>>texoutput.tex;
+		"=0\ee">>>texoutput.tex;];
+	,{i,0,1},{k,1,2},{l,2,3}];
+	
+];
+
+(* 1. F - an arbitrary antisymmetric tensor, low indexes! *)
+
+Max2[Fup_,JJJ_,SqrtMetricDet_,varia_,maxw_]:=Block[{},	Clear[maxw];
+		maxw=Table[Numerator[  Sum[D[SqrtMetricDet Fup[i,j],varia[j]],{j,0,3}]+SqrtMetricDet JJJ[i]//FS ]/.sim//FS,	{i,0,3}];
+		texListPrint[maxw," = 0"]
+	];
+
+
+MaxwEqPrivilegedCS:=Block[{},
+
+	runMaxwEqPrivilegedCS=1;
+	
+	Clear[maxwF, maxwA, maxwFup, maxwAup];
+	
+	Do[F/:F[i,i]@@var=0,{i,0,3}];
+	Do[F/:F[j,i]@@var=-F[i,j]@@var,{i,0,3},{j,i+1,3}];
+	Do[Fup/:Fup[i,i]@@var=0,{i,0,3}];
+	Do[Fup/:Fup[j,i]@@var=-Fup[i,j]@@var,{i,0,3},{j,i+1,3}];
+
+	Do[FupF[i,j]=Sum[F[l,m]@@var vg[i,l] vg[m,j],{l,0,3},{m,0,3}],  {i,0,3},{j,0,3}];
+	Do[FupA[i,j]=Sum[(D[A[m]@@var,x[l]]-D[A[l]@@var,x[m]]) vg[i,l] vg[m,j],{l,0,3},{m,0,3}]/.sim//FS,  {i,0,3},{j,0,3}];
+	Do[FupFup[i,j]=Fup[i,j]@@var,  {i,0,3},{j,0,3}];
+	
+	Max2[FupLocal_,maxw_]:=Block[{},
+		maxw=Table[(Numerator[  Sum[D[sqrtddet FupLocal[i,j],x[j]],{j,0,3}]+sqrtddet 4pi/cc J[i]@@var//EA//FS]//EA)/.sim//FS,	{i,0,3}];
+		maxw[[1]]=maxw[[1]]/sqrtddet;
+		texListPrint[maxw," = 0"]
+	];
+	
+	(* An example of usage: *)
+	
+	If[noFdonwJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with F in Priv. CS "];					Max2[FupF,maxwF]];
+
+	If[noFupJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant F in Priv. CS "];		Max2[FupFup,maxwFup]];
+		
+	If[noAdonwJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with A in Priv. CS "];					Max2[FupA,maxwA]];
+	
+	If[noAupJupMaxw=!=1,
+		texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant A in Priv. CS "];
+		Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS; G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+			G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
+			G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
+	
+		Do[FupAup[i,i]=0,{i,0,3}];	
+		Do[FupAup[i,j]=Sum[vg[i,l](D[Aup[j]@@var,x[l]]+Sum[G[k,l,j]Aup[k]@@var,{k,0,3}]),{l,0,3}]-Sum[vg[j,l](D[Aup[i]@@var,x[l]]+Sum[G[k,l,i]Aup[k]@@var,{k,0,3}]),{l,0,3}]//EA;
+		FupAup[j,i]=-FupAup[i,j],{i,0,3},{j,i+1,3}];
+		Max2[FupAup,maxwAup]
+	];
+];
+
+MaxwEqPrivilegedCSAdd:=Block[{},
+
+
+	If[runMaxwEqPrivilegedCS=!=1,MaxwEqPrivilegedCS];
+	runMaxwEqPrivilegedCSAdd=1;
+
+	(* ---------------------- ADD --------------------- *)
+	
+	
+	
+	OF[" General covariant form of II Maxwell eq. with a Dalembertian "]>>texoutput.tex;
+		OF["\\bb F^{ik}{}_{;k}=\\nabla^i\\nabla_k A^k+R^i_k A^k-\\Box A^i=-\\frac{4\\pi}{c}J^i\\ee"]>>texoutput.tex;
+	
+	
+	Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS; G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+		G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
+		G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
+
+	texHeadPrint[" The same with covar. Current\\\\ "];
+	
+	Do[FdownF/:FdownF[i,i]@@var=0,{i,0,3}];
+	Do[FdownF/:FdownF[j,i]@@var=-FdownF[i,j]@@var,{i,0,3},{j,i+1,3}];
+	Do[FdownFF[i,j]=FdownF[i,j]@@var,{i,0,3},{j,0,3}];
+	Do[FdownA[i,j]=D[A[j]@@var,x[i]]-D[A[i]@@var,x[j]],{i,0,3},{j,0,3}];
+	
+	(* stupid form! *)
+	
+	Max2covJ[Fdown_,maxw_]:=Block[{},	
+		maxw=Table[Numerator[  Sum[vg[k,l](D[Fdown[i,k],x[l]]-Sum[G[i,l,m]Fdown[m,k],{m,0,3}]-Sum[G[k,l,m]Fdown[i,m],{m,0,3}]),{k,0,3},{l,0,3}] + 4pi/cc Jdown[i]//FS] /.sim//FS,	{i,0,3}];
+		maxw[[1]]=maxw[[1]]/.sim2derivs//EA;
+		texListPrint[maxw," = 0"]
+	];
+	
+	Clear[maxwFdown, maxwAdown];
+	
+	If[noFdonwJdownMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with F and covar. J in Priv. CS "];		Max2covJ[FdownFF,maxwFdown] ];
+	
+	If[noAdonwJdownMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with A and covar. J  in Priv. CS "];		Max2covJ[FdownA,maxwAdown]  ];
+
+	texHeadPrint[" Lorentz gauge for covariant A "];
+
+		lorGauge=Sum[vg[i,j](D[A[i]@@var,x[j]]-Sum[G[i,j,k]A[k]@@var,{k,0,3}]),{i,0,3},{j,0,3}];
+		lorGauge=(lorGauge // EA) /. sim2derivs /. sim // EA;
+		texListPrint[lorGauge," = 0"];
+		
+	texHeadPrint[" Lorentz gauge for contravariant A "];
+		lorGaugeUp=Sum[D[Aup[i]@@var,x[i]],{i,0,3}]+Sum[Sum[G[i,k,i],{i,0,3}] Aup[k]@@var,{k,0,3}];
+		lorGaugeUp=(lorGaugeUp // EA) /. sim2derivs /. sim // EA;
+		texListPrint[lorGaugeUp," = 0"];
+		
+	texHeadPrint[" Ricci tensor "];
+		Do[R[i,k]=Sum[D[G[i,k,j],x[j]]-D[G[i,j,j],x[k]]+Sum[G[i,k,j]*G[j,m,m],{m,0,3}]-Sum[G[i,j,m]*G[k,m,j],{m,0,3}],{j,0,3}]//EA//Simplify;
+		If[R[i,k]=!=0, prolog=SB[R,SF["````",i,k]]; noMat=1; R[i,k]=(((R[i,k]//EA)/.sim2derivs//EA)/.sim//EA)/.sim2derivs//EA; texListPrint[R[i,k]] ];
+		,{i,0,3},{k,i,3}];	Do[R[k,i]=R[i,k],{i,0,2},{k,i+1,3}];
+	
+	
+		OF["\\newcommand{\EmptyDownTriangle}{\\nabla}"]>>>texoutput.tex;
+	
+	Header="nabla contravar. A";
+		Name=nabAup;
+		Type="FullMatrix";
+		prolog:=SequenceForm[SB[\[EmptyDownTriangle],i],"\[ThinSpace]",SPS["A",j]];
+		texprolog:=SequenceForm[SB[\[EmptyDownTriangle],i],SPS["A",j]];
+		Action:=EA[D[Aup[j]@@var,x[i]]+Sum[G[i,k,j]Aup[k]@@var,{k,0,3}]]/.sim//EA;
+		PostAction:=Block[{},
+			If[{i,j}=={2,2},nabAup[2,2]=nabAup[2,2]/. sim2derivs//EA];
+			If[{i,j}=={3,3},nabAup[3,3]=nabAup[3,3]/. sim2derivsAlt//EA];];
+		noTex=1;
+		newPrintingFunction;
+		
+	Header=" Dalembertian of contravariant A ";
+		Name=contravarBox;
+		Type="Vector";
+		prolog=DalAup[i];
+		Action:=((Sum[vg[m,j](D[nabAup[m,i],x[j]]-Sum[G[m,j,l]nabAup[l,i],{l,0,3}]+Sum[G[j,l,i]nabAup[m,l],{l,0,3}]),{m,0,3},{j,0,3}]//EA)/.sim//EA)/.sim2derivs//EA;
+		PostAction:=Block[{},
+			If[i==2, contravarBox[2]=contravarBox[2]/. sim//EA];
+			If[i==3,(contravarBox[3]=contravarBox[3]/. sim//EA)/. sim2derivsAlt // EA];];
+		noTex=1;
+		newPrintingFunction;
+	
+	Header="Maxwell Eq. with a Dalembertian of contravariant A";
+		Name=maxwDalAup;
+		Type="Vector";
+		Action:=Sum[vg[i,j] R[j,k] Aup[k]@@var,{k,0,3},{j,0,3}]-contravarBox[i]//EA;
+		epilog:=SequenceForm[" = ",4 pi/cc J[i]];
+		newPrintingFunction;
+
+		
+	Header="nabla covar. A";
+		Name=nabA;
+		Type="FullMatrix";
+		prolog:=SequenceForm[SB[\[EmptyDownTriangle],i],"\[ThinSpace]",SB["A",j]];
+		texprolog:=SequenceForm[SB[\[EmptyDownTriangle],i],SB["A",j]];
+		Action:=EA[D[A[j]@@var,x[i]]+Sum[G[i,j,k]A[k]@@var,{k,0,3}]]/.sim//EA;
+		PostAction:=Block[{},
+			If[{i,j}=={2,0},nabA[2,0]=nabA[2,0]/. sim2derivs//EA];
+			If[{i,j}=={3,0},nabA[3,0]=nabA[3,0]/. sim2derivsAlt//EA];];
+		noTex=1;
+		newPrintingFunction;
+
+	Header=" Dalembertian of covariant A ";
+		Name=covarBox;
+		Type="Vector";
+		prolog=DalA[i];
+		Action:=(((Sum[vg[m,j](D[nabA[m,i],x[j]]-Sum[G[m,j,l]nabA[l,i],{l,0,3}]-Sum[G[j,i,l]nabA[m,l],{l,0,3}]),{m,0,3},{j,0,3}]//EA)/.sim//EA)/.sim2derivs//EA)/.sim//EA;
+		noTex=1;
+		newPrintingFunction;
+
+	Header="Maxwell Eq. with a Dalembertian of covariant A";
+		Name=maxwDalA;
+		Type="Vector";
+		Action:=Sum[vg[k,j] R[j,i] A[k]@@var,{k,0,3},{j,0,3}]-covarBox[i]//EA;
+		epilog:=SequenceForm[" = ",4 pi/cc Jdown[i]];
+		newPrintingFunction;
+
+];
+
+
+EinstenEqPrivilegedCS:=Block[{},																			(* improved 03.06.2024 *)
+
+	standart;	Do[R[i,k]=(((R[i,k]/.sim2derivs//EA)/.sim//EA)/.sim//EA)/.sim2derivs//FS,{i,0,3},{k,0,3}];
+	
+	
+	Do[F[i,i]=0,{i,0,3}];
+	Do[F[j,i]=-F[i,j],{i,0,3},{j,i+1,3}];
+	
+	OF[" General view of Einstein eq-n"]>>>texoutput.tex;
+	OF["\\bb R_{\\alpha\\beta} - \\frac{8\\pi\\kappa}{c^4}\\left(T_{\\alpha\\beta}-\\frac 12 g_{\\alpha\\beta} T\\right) + g_{\\alpha\\beta}\\Lambda = 0 \\ee"]>>>texoutput.tex;
+	OF[" Stress Tensor "]>>>texoutput.tex;
+	OF["\\bb T_{\\alpha\\beta} - \\frac{1}{4\\pi} \\left(-F_{\\alpha\\gamma}F_{\\beta}{}^{\\gamma} + \\frac {1}{4} g_{\\alpha\\beta}F_{\\gamma\\delta}F^{\\gamma\\delta}\\right) \\ee"]>>>texoutput.tex;
+	
+	Header=" Stress Tensor in  Privileged CS ";
+		Name=T;
+		Type="SymMatrix";
+		prolog:=SB["T",SequenceForm[i,j]];
+		Action:=((-Sum[F[i,k] F[j,l] vg[k,l],{k,0,3},{l,0,3}]+ng[i,j] Sum[F[k,m] F[n,l] vg[k,n] vg[m,l],{k,0,3},{l,0,3},{m,0,3},{n,0,3}]/4)/4/pi//EA)/.sim//FS;
+		newPrintingFunction;
+	
+	
+	Print[" Convolution (test): "]; TT=(Sum[T[i,k]vg[i,k],{i,0,3},{k,0,3}]/.sim//FS)/.sim//FS; Print["T = ",TT];
+	
+	
+	Header=" Einstein eq-ns in Privileged CS ";
+		Name=Ein;
+		Type="SymMatrix";
+		Action:=Numerator[R[i,j]-(8 pi ka)/cc^4 (T[i,j]-ng[i,j] TT/2)+ng[i,j]La]; 
+		epilog=" = 0";
+		newPrintingFunction;
+	
+	texHeadPrint[" Einstein eq-ns convolution "];
+	
+	EE=Sum[Ein[i,k]vg[i,k],{i,0,3},{k,0,3}]//FS; EE=(EE/.sim//EA)/.sim//EA;  Print["0 = ",EE]; texPrint["",EE," = 0"];
+	
+	OF[" Let us to consieder the folloving solution\\\\ "]>>>texoutput.tex;
+	OF["\\bb \Lambda=F_{01}=F_{12}=F_{13}=F_{23}=0\\ee"]>>>texoutput.tex;
+	
+	sub={F[0,1]->0,F[1,2]->0,F[1,3]->0,F[2,3]->0,La->0};
+	Print[" Solution: "]; Print[sub];
+	
+	Header=" Single nonzero component of Stress Tensor ";
+		Name=Tsub;
+		Type="SymMatrix";
+		prolog:=SB["T",SequenceForm[i,j]];
+		Action:=T[i,j]/.sub;
+		nonZero=1;
+		newPrintingFunction;
+		
+	Header=" Single nontrivial Einstein eq-n ";
+		Name=Einsub;
+		Type="SymMatrix";
+		Action:=Ein[i,j]/.sub;
+		epilog=" = 0";
+		nonZero=1;
+		Enumerate=1;
+		newPrintingFunction;
+	
+];
+
+
+ChargeConservPrivilegedCSTesting:=Block[{}, (* - it must lead to identity! - *)
+	
+	If[runMaxwEqPrivilegedCS=!=1,MaxwEqPrivilegedCS];
+	runChargeConservPrivilegedCSTesting=1;
+	
+	texHeadPrint[" Char. conserv. with covar. F "];
+		ccl=Sum[D[sqrtddet FupF[i,k],x[i],x[k]],{i,0,3},{k,0,3}]//FS;
+		texListPrint[ccl," = 0"];
+	
+	texHeadPrint[" Char. conserv. with potential A "];
+		ccl=Sum[D[sqrtddet FupA[i,k],x[i],x[k]],{i,0,3},{k,0,3}]//FS; 
+		texListPrint[ccl," = 0"];
+	
+];
+
+ChargeConservPrivilegedCS:=Block[{}, 
+	
+	runChargeConservPrivilegedCS=1;
+	
+	texHeadPrint[" Char. conserv. with contravar. J in Priv. CS "];	
+		ccl=Sum[D[sqrtddet J[i]@@var,x[i]],{i,0,3}]//FS; 
+		texListPrint[ccl," = 0"];
+];
+
+DalembertianSeparatedPhiPrivilegedCS:=Block[{}, 
+
+	runDalembertianSeparatedPhiPrivilegedCS=1;
+
+	texHeadPrint[" Scalar potential in separated form "];	
+		fifi=fi[x[0]]Exp[Sum[ka[i]x[i],{i,3}]];
+		prolog=\[Phi];
+		texListPrint[fifi];
+	
+	texHeadPrint[" Dalembertian of  Phi in privileged CS "];
+		DalPhi=Sum[D[sqrtddet Sum[vg[i,k] D[fifi,x[k]],{k,0,3}],x[i]],{i,0,3}]//FS//Numerator;
+		texListPrint[DalPhi," = 0"];
+	
+	texHeadPrint[" Most simple form of this equation in recent metric  "];	
+		eqS = DalPhi[[3]]/fi[x[0]]/g[x[0]] // EA;
+		texListPrint[eqS," = 0"];	
+	
+	texHeadPrint[" It`s solution  "];	
+		s1=(Solve[0==Integrate[eqS,x[0]]//WPQ//EA//FS,fi[x[0]]][[1,1]]//FS)/.g[x[0]]->Abs[g[x[0]]]/.Rule->Equal;
+		texListPrint[s1];	
+];
+
+OsetrinSolutionTesting:=Block[{},
+(*	
+	Do[Aup[i]=sqrtddet^(-1/2)(cc[i] Exp[Sum[ka[i,j]x[j],{j,3}]-Sum[ka[i,m]ka[i,n]G[m,n][x[0]],{m,2,3},{n,2,3}]/2/ka[i,1]] + x[2](hi[i][x[0]]+xi[i][x[1]]) + x[3](psi[i][x[0]]+et[i][x[1]]));Print[i,".   ",Aup[i]],{i,0,3}];
+	*)
+	Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS; G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+	
+	G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
+	G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
+	
+	Do[If[G[i,j,k]=!=0,Print[Subsuperscript[\[CapitalGamma],SF["````",i,j],SF["  ``",k]],"  =  ",G[i,j,k]/.w];],{i,0,3},{j,i,3},{k,0,3}];
+	
+	Do[R[i,k]=Sum[D[G[i,k,j],x[j]]-D[G[i,j,j],x[k]]+Sum[G[i,k,j]*G[j,m,m],{m,0,3}]-Sum[G[i,j,m]*G[k,m,j],{m,0,3}],{j,0,3}]//EA//Simplify,{i,0,3},{k,i,3}];
+	
+	R[0,0]=((R[0, 0] /. sim2derivs // EA) /. sim // EA) /. sim2derivs // FS;
+	
+	Do[If[R[i,k]=!=0,Print[SB[R,SF["````",i,k]],"  =  ",R[i,k]]],{i,0,3},{k,i,3}];
+	(*
+	simE=Table[Exp[Sum[ka[i,j]x[j],{j,3}]-Sum[ka[i,m]ka[i,n]G[m,n][x[0]],{m,2,3},{n,2,3}]/2/ka[i,1]]->EE[i],{i,0,3}];
+	
+	simA=Table[Solve[AA[i]==Aup[i]/.simE,EE[i]][[1,1]],{i,0,3}]/.sim;
+	*)simE={};
+	
+	
+	Do[nabA[j,k]=D[Aup[k]@@var,x[j]]+Sum[G[j,l,k]Aup[l]@@var,{l,0,3}],{j,0,3},{k,0,3}];
+	
+	DalA1=Table[Sum[vg[i,j](D[nabA[j,k],x[i]]-Sum[G[i,j,l]nabA[l,k],{l,0,3}]+Sum[G[i,l,k]nabA[j,l],{l,0,3}]),{i,0,3},{j,0,3}],{k,0,3}]/.simE//EA;
+		
+		DalA1[[1]]=DalA1[[1]] /. sim /. sim2derivs // FS;
+		DalA1[[2]]=(((DalA1[[2]] /. sim // EA) /. sim2derivs // EA) /. sim //       EA) // FS;
+		DalA1[[3]]=(((DalA1[[3]] /. sim // EA) /. sim2derivs // EA) /. sim2derivs // EA) /. sim //   FS;
+(*		DalA1[[4]]=(((DalA1[[4]] /. sim // EA) /. sim2derivs // EA) /. sim2derivs // EA) /. sim //   FS;*)
+		texListPrint[DalA1];
+		
+		
+	DalA2=Table[1/sqrtddet Sum[D[sqrtddet Sum[vg[l,k] (D[Aup[i]@@var,x[l]]+Sum[G[l,m,i]Aup[m]@@var,{m,0,3}]),{l,0,3}],x[k]],{k,0,3}],{i,0,3}]/.simE//EA;
+		
+		DalA2=DalA2/.sim//FS;
+		DalA2[[2]]=((DalA2[[2]] // EA) /. sim2derivs // EA) /. sim // FS;
+		DalA2[[3]]=((DalA2[[3]] // EA) /. sim2derivs // EA) /. sim // FS;
+		DalA2[[4]]=((DalA2[[4]] // EA) /. sim2derivs // EA) /. sim // FS;
+		texListPrint[DalA2];
+		
+	Do[A[i]=Sum[Aup[j]@@var vg[i,j],{j,0,3}]//FS,{i,0,3}];
+	
+	Do[nablaA[be,de]=D[A[de],x[be]]-Sum[G[de,be,ga] A[ga],{ga,0,3}]; 	,{de,0,3},{be,0,3}];
+							
+	DalA3=Table[Sum[vg[i,j]Sum[vg[k,l](D[nablaA[l,j],x[k]]-Sum[G[k,l,m]nablaA[m,j],{m,0,3}]-Sum[G[k,j,m]nablaA[l,m],{m,0,3}]),{k,0,3},{l,0,3}],{j,0,3}],{i,0,3}]/.simE//EA;
+		DalA3=DalA3/.sim//EA;
+		DalA3[[1]]=((DalA3[[1]] // EA) /. sim2derivs // EA) /. sim // FS;
+		DalA3[[2]]=((DalA3[[2]] // EA) /. sim2derivs // EA) /. sim // FS;
+		DalA3[[3]]=((DalA3[[3]] // EA) /. sim2derivs // EA) /. sim // FS;
+		DalA3[[4]]=((DalA3[[4]] // EA) /. sim2derivs // EA) /. sim // FS;
+		DalA3[[2]] = (((DalA3[[2]] /. sim // EA) /. sim // EA) /. sim2derivs // EA) /. sim //     FS;
+		texListPrint[DalA3];
+
+];
+
+
+(* 2. --------- Action & Eikonal in Priv. CS ---------- *)
+
+
+HamJac:=Block[{},
+
+	runHamJac=1;
+	
+	Print[];
+	Print[" ================ HamJac is working, 2024 ==============="];	
+
+	texHeadPrint[" Action general form "];
+		SS=fi[x[0]] + Sum[la[i]x[i],{i,3}];
+		prolog="S";
+		texListPrint[SS, ",\\ \\ \\ \\ n = 1,2,3.", WPQ];
+	
+	texHeadPrint[" Hamilton-Jacoby Eq-n in recent metric "];
+		hamjac=Sum[vg[i,j]D[SS,x[i]]D[SS,x[j]],{i,0,3},{j,0,3}]-MM^2/.sim;
+		texListPrint[hamjac, " = 0,\\ \\ \\ \\ p,q = 2,3,", WPQ];
+		
+		(* blocked, because it will be calculated for different lambda_1 below *)
+	
+	texHeadPrint[" thus, "];
+		solvhamjac=Solve[hamjac==0,fi'[x[0]]][[1,1]]//FS//EA;
+		(*texListPrint[solvhamjac,FS];*)
+	
+	dsolvhamjac=Integrate[solvhamjac[[2]],x[0]]//FS;
+		prolog = SB[\[Phi], 0];
+		texListPrint[dsolvhamjac, ",",WPQ];
+	
+	SS=dsolvhamjac + Sum[la[i]x[i],{i,3}];
+		prolog="S";
+		texListPrint[SS, ".",WPQ];
+
+]; 
+
+MotionEq:=Block[{},
+
+	If[runHamJac=!=1,HamJac];
+	runMotionEq=1;
+	
+	texHeadPrint[" Equations of motion "];
+		moteq=Table[D[SS,la[k]]-si[k]==0,{k,3}];
+		texListPrint[moteq,WPQ];
+	
+	(*texHeadPrint[" Massive particle traectories (solutions of motion eq-ns relative x) "];*)
+		solvmoteq=Solve[moteq,x/@{1,2,3}][[1]];
+		(*texListPrint[solvmoteq,EA];*)
+];
+
+StupidSyncMetric:=Block[{},
+
+	If[runMotionEq=!=1,MotionEq];
+	runStupidSyncMetric=1;
+	
+	Print[];
+	Print[" ================ StupidSyncMetric is working, 05.07.2024 ==============="];
+	
+	(* a calculus, 26.06.2024, stupid *)	
+	(* how 'vgsync' is seen in general, without concrete transformation rules *)
+	(*
+	FoF[backjacobian[it_, jt_],     Times[SequenceForm["\[PartialD]", y[it]],       Power[SequenceForm["\[PartialD]", x[jt]], -1]]];
+	Do[gg[i, j] =       Sum[vg[l, k] backjacobian[i, l] backjacobian[j, k], {l, 0, 3}, {k, 0,           3}]; Print[i, j, ".   ", gg[i, j]], {i, 0, 3}, {j, i, 3}];
+	*)
+
+	
+	noTex=1;texListPrint[solvmoteq];
+	Do[iks[i]=solvmoteq[[i,2]],{i,3}];
+	
+	Header=" Jacoby matrix";
+		Name=jacobian;
+		Type="FullMatrix";
+		Action:=D[iks[i],la[j]];
+		prolog:=Times[SequenceForm["\[PartialD]", x[i]], Power[SequenceForm["\[PartialD]", la[j]], -1]];
+		texprolog:=SF["\\frac{\\partial  x^``}{\\partial \\lambda^``}",i,j];
+		Beauty=WPQ;
+		newPrintingFunction;
+	
+	texHeadPrint[" Proper time "];
+		q0 = (SS /. MM -> 1)[[1, 2, 1]];
+		q1 = solvmoteq[[1, 2, 2, 1, 2, 1]];
+		q2 = solvmoteq[[2, 2, 2, 1, 1]];
+		q3 = solvmoteq[[3, 2, 2, 1, 1]];
+		tau=Sum[la[k]si[k],{k,3}]+Integrate[(-q0 - la[1]q1 + la[2]q2 + la[3]q3)/2 // FS,x[0]]/.MM->1;
+		prolog=ta;
+		texListPrint[tau,WPQ];
+		
+	texHeadPrint[" Contravariant components of 4-velocity "];
+		uu[0]=1/D[tau,x[0]];
+		Do[uu[i]=uu[0] D[solvmoteq[[i,2]],x[0]]/.MM->1,{i,3}];
+		uUp=Table[uu[i],{i,0,3}];
+		prolog=u[i-1];
+		texListPrint[uUp,{WPQ,FS,Expand[#,b[__]]&}];
+	
+	Header=" Covariant components of 4-velocity ";
+		Name=uDown;
+		Type="Vector";
+		Action:=(Sum[ng[i,j] uu[j],{j,0,3}]//FS)/.sim//FS;
+		prolog=ud[i];
+		Beauty={WPQ,FS};
+		newPrintingFunction;
+	
+	texHeadPrint[" Norm condition "];
+		normU=(Sum[ng[i,j] uu[i] uu[j],{i,0,3},{j,0,3}]//FS)/.sim//FS;
+		prolog=SPS["u",al]SB["u",al];
+		texListPrint[normU];
+		
+	Header=" Stress tensor of dust matter in the Privileged CS ";
+		Name=Tdust;
+		Type="SymMatrix";
+		
+		Action:=(ro uDown[i] uDown[j]//FS)/.sim//FS;
+		prolog:=SB["T",SequenceForm[i,j]];
+		Beauty={WPQ,FS};
+		newPrintingFunction;
+];
+
+
+Eikonal:=Block[{},
+
+	If[runMotionEq=!=1,MotionEq];
+	runEikonal=1;
+	
+	texHeadPrint[" Eikonal "];
+		eik=SS/.MM->0/.la->ka(*/.ka[1]->1*);
+		prolog = \[CapitalPsi];
+		texListPrint[eik,WPQ];
+	
+	texHeadPrint[" Massless particle traectories "];
+		eikon=moteq/.MM->0/.la->ka/.si->ga/.ka[1]->1//FS;
+		texListPrint[eikon,{WPQ,EA}];
+	
+];
+	
+	
+TwoArbitraryPoints:=Block[{},
+
+	If[runEikonal=!=1,Eikonal];
+	runTwoArbitraryPoints=1;
+	
+	Print[];
+	Print[" ================ TwoArbitraryPoints is working, 2024 ==============="];
+	
+	FoF[ G[it_,jt_][a_A b_A], SPB["G","S", Sfitjt]];
+	FoF[ G[it_,jt_][a_B b_B], SPB["G","D", Sfitjt]];
+	FoF[ G[it_,jt_][_xS],     SPB["G","S", Sfitjt]];
+	FoF[ G[it_,jt_][_xD],     SPB["G","D", Sfitjt]];
+	FoF[ GG @_xS, SB["G","S"]];
+	FoF[ GG @_xD, SB["G","D"]];
+	FoF[ xS @it_, SPB["x","S",SF[" ``",it]]];
+	FoF[ yS @it_, SPB["y","S",SF[" ``",it]]];
+	FoF[ yD @it_, SPB["y","D",SF[" ``",it]]];
+	FoF[ xD @it_, SPB["x","D",SF[" ``",it]]];
+
+
+
+	texHeadPrint[" Eikonal eq-n with 2 arbitrary points: S & D \\\\"]; (* S - source *)	
+	
+	texHeadPrint[" Eikonal eq. for S"]; 
+		RadTraectoryA=eikon/.x->xS;
+		texListPrint[RadTraectoryA,FS];	
+	
+	texHeadPrint[" It`s solution relative gammas"];
+		s1=Solve[RadTraectoryA,ga/@{1,2,3}][[1]];
+		texListPrint[s1];	(* 06.09.2024, needed for 'model2' *)
+		(*texListPrint[s1,EA];*)(* old, needed for '30general_diff' *)
+
+	texHeadPrint[" Subst. it to Eeq for D"];
+		RadTraectoryB=(eikon/.x->xD/.s1//FS)~Collect~ka[_];
+		texListPrint[RadTraectoryB];	
+	
+	texHeadPrint[" It`s solution relative k-s"];
+		s2=Solve[{RadTraectoryB[[2]],RadTraectoryB[[3]]},ka/@{2,3}][[1]]//Simplify;
+		texListPrint[s2];
+	
+	texHeadPrint[" Relation (retarding) btw S & D FULL (without simplifying definitions)"];
+		eqqF=(Numerator[RadTraectoryB[[1,1]]-RadTraectoryB[[1,2]]/.s2//Simplify]//.sim//FS)~Collect~(xD[_]-xS[_])/.antisim//FS; 			(* comment: 'tric' with '/.sim' & '/.antisim' is needed for primary calculation *)
+		texListPrint[eqqF," = 0"];
+
+	(* sims *)
+
+	
+	(* this is actual for 'ABC_diff_metric' only! *)
+	
+	If[dataFileName == "ABC_diff_metric",
+		texHeadPrint[ "Simplified first equation"];
+			FoF[DelIT@it_, SB[Del,it]];
+			sim0={(it:(a|b|c))@xD[0]->DelIT[it]+it[xS[0]],xD[it:(1|2|3)]->DelIT[it]+xS[it]};
+			eqqFS=(Numerator[RadTraectoryB[[1,1]]-RadTraectoryB[[1,2]]//Simplify])~Collect~(xD[_]-xS[_])/.sim0;
+			texListPrint[eqqFS," = 0"];
+			
+		texHeadPrint[ "Simplified kappas"];
+			s2S=s2/.sim0//FS;
+			texListPrint[s2S];
+			
+		texHeadPrint[ "Relation (retarding) btw S & D simplified"];
+			eqqFSS=Collect[Numerator[eqqFS/.s2S//FS],SB[Del,it_Integer],FS];
+			texListPrint[eqqFSS," = 0"];
+	
+	]; (* <- end if *)
+	
+	
+	(* this is actual for '30general_diff' only! *)
+	
+	If[dataFileName == "30general_diff",
+	
+		FoF[delG[it_,jt_], SPS[SF["````",\[CapitalDelta],"G"],SF["````",it,jt]]];
+		FoF[delX[it_], SPS[SF["````",\[CapitalDelta],"x"],it]];
+		FoF[delGdown[it_,jt_], SB[SF["````",\[CapitalDelta],"G"],SF["````",it,jt]]];
+		FoF[delGG, SF["````",\[CapitalDelta],"G"]];
+		
+		texHeadPrint[" Let us introduce some simplifications\\\\"];
+			simOptional1:={
+					G[it_,jt_][xS[at_]]->delG[it,jt]+G[it,jt][xD[at]],			(* don`t mix! *)
+					xS[it_]->delX[it]+xD[it]
+					};
+			noTex=1;
+			texListPrint[simOptional1];
+							
+			OF["\bb"]>>>texoutput.tex;											(* stupid lowlevel tex output for 'simOptional1' *)
+			delG[p,q]//TeXForm>>>texoutput.tex;
+			OF[" = "]>>>texoutput.tex;
+			G[p,q][xS[0]]-G[p,q][xD[0]]//TeXForm>>>texoutput.tex;
+			OF[",\\ \\ \\ \\ "]>>>texoutput.tex;
+			delX[p]//TeXForm>>>texoutput.tex;
+			OF[" = "]>>>texoutput.tex;
+			xS[p]-xD[p]//TeXForm>>>texoutput.tex;
+			OF[",\ee"]>>>texoutput.tex;
+		
+			
+		
+		texHeadPrint[" so, "];
+			eqqSim1=eqqF/.simOptional1;
+			texListPrint[eqqSim1," = 0"];
+				
+		texHeadPrint[" Still one definition "];
+			simOptional2:={
+					delG[2,3]^(jt_Integer /; Positive[jt])->(-delGG+delG[2,2]delG[3,3]) delG[2,3]^(jt-2),				(* don`t mix! *)
+					delG[3,3]->delGdown[2,2]delGG,delG[2,3]->-delGdown[2,3]delGG,delG[2,2]->delGdown[3,3]delGG
+					};
+			noTex=1;
+			texListPrint[simOptional2];
+		
+			OF["\bb"]>>>texoutput.tex;											(* stupid lowlevel tex output for 'simOptional1' *)
+			delGdown[p,q]//TeXForm>>>texoutput.tex;
+			OF[" = \left["]>>>texoutput.tex;
+			delG[p,q]//TeXForm>>>texoutput.tex;
+			OF["\\right]^{-1}"]>>>texoutput.tex;
+			OF[",\ee"]>>>texoutput.tex;
+		
+		texHeadPrint[" so, "];
+			eqqSim2=eqqSim1/delGG//.simOptional2//EA; 
+			texListPrint[eqqSim2," = 0,"];
+				
+		texHeadPrint[" or most compact "];
+			ww00qq=G[2, 3]'[at__]jt__[2]jt__[3] -> (SPS["G'","pq"]SB[jt,"p"]SB[jt,"q"] - G[2, 2]'[at]jt[2]^2 - G[3, 3]'[at]jt[3]^2)/2;
+			simOptional3:={it__[2, 3]jt__[2]jt__[3] -> (it["p", "q"]jt["p"]jt["q"] - it[2, 2]jt[2]^2 - it[3, 3]jt[3]^2)/2};
+			eqqSim3=eqqSim2/.simOptional3//FS;
+			texListPrint[eqqSim3," = 0."];
+				
+		texHeadPrint[" Constans k with this terminology "];
+			s2sim=s2/.simOptional1//FS;
+			s2sim=s2sim//.simOptional2//FS;
+			texListPrint[s2sim];
+		
+	]; (* <- end if *)
+];
+
+TwoArbitraryPoints31SkipedCalculations:=Block[{},
+
+	runTwoArbitraryPoints31SkipedCalculations=1;
+	
+	(* for 'model2' & other complicated metrics we use PREPARED view of low of retarding light signal, don`t be stupid! *)
+	(* this is prepared formula *)
+	
+	Print[];
+	Print[" ================ TwoArbitraryPoints31SkipedCalculations is working, 09.09.2024 ==============="];
+
+	
+	FoF[DelIT@it_, SB[Del,it]];
+	
+	texHeadPrint[ "Retarding of light signal in general view"];
+		eqqFSS=-2*DelIT[b]*(DelIT[2]*DelIT[3]+DelIT[1]*DelIT[b])+DelIT[2]^2*DelIT[c]+DelIT[a]*(DelIT[3]^2+2*DelIT[1]*DelIT[c]);
+		texListPrint[eqqFSS," = 0"];
+	
+	texHeadPrint[ "It, in recent metric"];
+		aintegr=Integrate[VG[[3,3]],x[0]]//FS;
+		bintegr=Integrate[VG[[3,4]],x[0]]//FS;
+		cintegr=Integrate[VG[[4,4]],x[0]]//FS;
+		zam={
+			DelIT[a]->(aintegr/.x->xD)-(aintegr/.x->xS),
+			DelIT[b]->(bintegr/.x->xD)-(bintegr/.x->xS),
+			DelIT[c]->(cintegr/.x->xD)-(cintegr/.x->xS)
+		};
+		retlow=eqqFSS/.zam;
+		texListPrint[retlow," = 0"];
+
+	texHeadPrint[ "It, simplified"];
+		Which[dataFileName=="model2", eqq = Collect[nu^4(be^2-al^2ga^2)retlow/si^2/.mu->(1-nu)/2//EA, DelIT[_], FS],
+			dataFileName=="model2nu0", eqq = Collect[ga^2Sin[fi]^2 retlow//EA, DelIT[_], FS],
+			True, Print["You can add some simplifications"]
+		];
+		texListPrint[eqq," = 0"]
+];
+
+TwoArbitraryPointsSim:=Block[{popo,pipi},  (* ---------------- this is needed for data file '30' only, with 'Sin[th]' & 'Cos[th]' ------------ *) (* old shit rebuilt at 22.05.2024 *)
+
+	If[runTwoArbitraryPoints=!=1,TwoArbitraryPoints];
+	runTwoArbitraryPointsSim=1;
+
+	texHeadPrint[" An attempt to simplificate last results for the recent metric\\\\ "];
+	
+	popo[xx_]:=xx/.antisim/.A[0]->A[0]^(1/Sin[th])/.B[0]->B[0]^(1/Sin[th])//PowerExpand;
+	pipi[xx_]:=(popo[xx]/.Csc[th]->xyxy//Simplify)/.xyxy->Csc[th];
+	
+	texHeadPrint[" Eikonal eq. for A "];
+		RadTraectoryASim=RadTraectoryA//popo;
+		texListPrint[RadTraectoryASim];
+	
+	texHeadPrint[" It`s solution "];
+		s1Sim=s1//popo;
+		texListPrint[s1Sim];
+	
+	texHeadPrint[" Subst. it to Eeq for B "];
+		RadTraectoryBSim=RadTraectoryB//popo;
+		texListPrint[RadTraectoryBSim];
+	
+	texHeadPrint[" It`s solution "];
+		s2Sim=s2//pipi;
+		texListPrint[s2Sim];
+	
+	texHeadPrint[" Relation btw A & B "];
+		eqqSim=eqqF//pipi;
+		texListPrint[eqqSim," = 0"];
+];
+
+
+
+(* 3. --------- Synchron Coordinates ---------- *)
+
+Trans:=Block[{},
+
+	If[runMotionEq=!=1,MotionEq];
+	runTrans=1;
+	
+	Print[];
+	Print[" ================ Trans is working, 2024 ==============="];
+	
+	OF[" \\section{Synchronous CS}"]>>>texoutput.tex;
+	
+	texHeadPrint[" Privileged to Synchron CS transformation rules "];
+		trans[0]=x[0]->y[1] y[0];
+		Do[trans[k]=Solve[moteq[[k]]/.{MM->1,trans[0],la->y,si[k]->0},x[k]][[1,1]]//FS,{k,3}];	
+
+		TransToSync=trans/@{0,1,2,3};
+		texListPrint[TransToSync];
+
+
+	Header=" Jacoby matrix";					(* 18.04.2024, first expirience of using 'newPrintingFunction' for matrix *)
+		Name=jacobian;
+		Type="FullMatrix";
+		Action:=(D[trans[i][[2]],y[j]]//FS)~Collect~y[_];
+		prolog:=Times[SequenceForm["\[PartialD]", x[i]], Power[SequenceForm["\[PartialD]", y[j]], -1]];
+		texprolog:=SF["\\frac{\\partial  x^``}{\\partial y^``}",i,j];
+		Beauty:=FS;
+		newPrintingFunction;
+];
+
+SyncMetric:=Block[{},
+
+	If[runTrans=!=1,Trans];
+	runSyncMetric=1;
+
+	Print[];
+	Print[" ================ SyncMetric is working, 25.09.2024 ==============="];
+	
+	(* Trere are 2 methods for synchr. metric:
+		1) 'ngsync' - by direct calculation;
+		2) 'ngsync0' - by hands, it placed in data file.
+		Finally, we must use 'ngsync' only. So, we use 'TrueTest' for comparision of them.
+	*)
+	If[runSyncMetricWrittenByHands==1,			(*1*)
+	
+		Header=" Metric in syncr. CS";
+			Name=ngsync;
+			Type="SymMatrix";
+			Action:=ns[i,j]//FS;
+			prolog=SB["g",SF["````",i,j]];
+			newPrintingFunction;
+			
+		Header=" Contravariant metric tensor in syncr. CS";
+			Name=vgsync;
+			Type="SymMatrix";
+			Action:=vs[i,j]//FS;
+			prolog=SPS["g",SF["````",i,j]];
+			newPrintingFunction;
+		NGsync=Table[ngsync[i-1,j-1],{i,4},{j,4}],	(* <- END OF THEN for (*1*) *)
+	
+	ATTENTION["Direct calculations!"];
+	
+	pip[it_]:=((it//EA)/.sim//EA)/.simOptForGij//FS;
+		
+	Header=" Metric in syncr. CS";
+		Name=ngsync;
+		Type="SymMatrix";
+		Action:=FixedPoint[pip, Sum[ng[l,k] jacobian[l,i] jacobian[k,j]/.trans[0],{l,0,3},{k,0,3}]]; 
+		prolog=SB["g",SF["````",i,j]];
+		Beauty={EA,WPQ,FS};
+		newPrintingFunction;
+	
+	
+	If[ValueQ[simLowG]&&simLowG=!={},								(* 10.09.2024 *)
+		texHeadPrint[" We can introduce a definition "];
+			noTex=1;texListPrint[simLowG];
+	
+			OF["\bb"]>>>texoutput.tex;									(* stupid lowlevel tex output for 'simOptional1' *)
+			Gdown[p,q]@_//TeXForm>>>texoutput.tex;
+			OF[" = \left["]>>>texoutput.tex;
+			G[p,q]@_//TeXForm>>>texoutput.tex;
+			OF["\\right]^{-1}"]>>>texoutput.tex;
+			OF[",\ee"]>>>texoutput.tex;
+		
+		
+		Header=" so, ";
+			Name=ngsyncLowG;
+			Type="SymMatrix";
+			Action:=ngsync[i,j]/.simLowG//EA//FS;
+			prolog=SB["g",SF["````",i,j]];
+			Beauty={EA,FS};
+			newPrintingFunction;,Print["baaaaaaad"];
+	];
+	
+	NGsync=Table[ngsync[i-1,j-1],{i,4},{j,4}];
+	Print["test 1"];
+	VGsync=Inverse[NGsync]//FS;
+	Print["test 2"];
+	
+	Header=" Contravariant metric tensor in syncr CS";
+		Name=vgsync;
+		Type="SymMatrix";
+		Action:=FixedPoint[pip, VGsync[[i+1,j+1]] ]/.ass/.simOptForGij//EA//FS;
+		prolog=SPS["g",SF["````",i,j]];
+		newPrintingFunction;
+	
+	If[ValueQ[simLowG]&&simLowG=!={},								(* 10.09.2024 *)
+		Header=" or, with low-indexed funtions G, ";	
+			Name=vgsyncLowG;
+			Type="SymMatrix";
+			Action:=vgsync[i,j]/.simLowG//EA//FS;
+			prolog=SPS["g",SF["````",i,j]];
+			newPrintingFunction;
+	];
+	]; (* <- NED IF (*1*) *)
+		
+	(* this method is not needed now, but we must remember about *)
+	
+	(* HandMadeVSDirectlyCalculatedMetricsComparision; *)
+	
+	
+	texHeadPrint[" Det of cov. metric tensor in Synch. CS "];
+		d0=Det[NGsync]/.ass//FS;  d0=d0/.sim;
+		prolog = SB["g","sync"];
+		texListPrint[d0];
+	
+	
+	Print[" Sqrt From Det of metric tensor in Synch. CS"];
+	d2=Simplify[Sqrt[-d0],{nu>0,si>0}] ; Print[Sqrt[-g]," = ",d2]; 
+	(*d2=Simplify[Sqrt[-d0],{Element[GG[y[0] y[1]], Reals], Element[y[0], Reals], Element[y[1], Reals]}] ; Print[Sqrt[-g]," = ",d2]; *)
+	
+	
+	(* ----- back trans -----*)
+	
+	If[ValueQ[BackJacobianWrittenByHands],
+		texHeadPrint[" Backward transformation from Sync. to Priv. CS \\\\ "];
+		BackJacobianWrittenByHands; (* from '30general_diff' at 11.01.2024 *)	
+		
+		(*
+		If[runBackJacobianWrittenByHands===1,
+			Print[" Backward Transformation Jacobyan is simplified by hands, see input data file "];
+			TrueTest=(Table[backjacobian[i,j]==backjacobian0[i,j]/.ass/.antisim//FS,{i,0,3},{j,0,3}]//Flatten)~DeleteCases~True;
+			If[
+				TrueTest=={},Print[" Simplified Backward Transformation Jacobyan is the same as the directly calculated "],
+				ATTENTION["Some difference between hand-made & directly calculated Jacobyans is obtained! "]; Print[TrueTest]
+			],
+			Print[" Backward Transformation Jacobyan is directly calculated "];
+			Do[backjacobian[i,j]=backjacobian0[i,j],{i,0,3},{j,0,3}]
+		];
+		*)
+		
+		Header=" Jacoby matrix of backward transform ";
+			Name=backjacobian;
+			Type="FullMatrix";
+			Action:=backjacobian[i,j];
+			prolog:=Times[SequenceForm["\[PartialD]", y[i]], Power[SequenceForm["\[PartialD]", x[j]], -1]];
+			texprolog:=SF["\\frac{\\partial  y^``}{\\partial x^``}",i,j];
+			newPrintingFunction;
+	];
+	
+	(* at present it is true:
+	Print[ "Test vgsync - ngsync convolution (no LaTeX)"];
+	syncmetrictest=(Table[Sum[ngsync[i,j]vgsync[j,k],{j,0,3}]//FS,{i,0,3},{k,0,3}]/.sim//FS)/.simOptForGij//FS;
+	Print[syncmetrictest];
+	
+	Print[ "Test J - J^(-1) convolution (no LaTeX)"];
+	jacobiantest=(Table[Sum[jacobian[i,j]backjacobian[j,k],{j,0,3}]/.TransToPriv//FS,{i,0,3},{k,0,3}]/.sim//FS)/.simOptForGij//FS;
+	jacobiantest = jacobiantest /. (gpq /. z -> x[0]) // EA;
+	jacobiantest = jacobiantest /. (gpq /. z -> x[0]) // FS;
+	jacobiantest = jacobiantest /. sim // FS;
+	jacobiantest = jacobiantest /. ass // FS;
+	jacobiantest = jacobiantest /. sim // FS;
+	jacobiantest = jacobiantest /. (gpq /. z -> x[0]) // FS;
+	jacobiantest = jacobiantest // PowerExpand;
+	Print[jacobiantest];
+	*)
+];
+
+
+TestShortFormMaxwEq:=Block[{},				(* 14.05.2024 *) (* smart form without convolutions *)
+
+	If[runSyncMetric=!=1,SyncMetric];
+	runTestShortFormMaxwEq=1;
+	
+	thisBlockBegin=Date[];
+	
+	Vgs=Table[vgsyncLowG[i,j],{i,0,3},{j,0,3}];
+	
+		FoF[gs[__], \[Gamma]];				(* g_sync  = - gs^2 *)
+		
+		simsync =   Solve[FS[Det[Vgs]] == -1/gs[y[0], y[1]]^2 /. Gdown[2, 3]'[y[0]y[1]]^2 -> z, z][[1, 1]] /. z -> Gdown[2, 3]'[y[0]y[1]]^2;
+		simsync={simsync}~Join~{Gdown[2, 3]'[xx__]^nn_ -> simsync[[2]]Gdown[2, 3]'[xx]^(nn - 2)};
+		
+		antisimsync2 = gs[y[0], y[1]]^nn_ -> (-1/Det[Vgs] // FS)^(nn/2);
+		
+		antisimsync = gs[y[0], y[1]] -> (-1/Det[Vgs] // FS)^(1/2);
+		
+		gsderivsremover={
+			Table[((D[antisimsync,y[i]]//FS)/.simsync//FS//PowerExpand)/.simsync//FS,{i,0,1}],
+			Table[((D[antisimsync,y[i],y[j]]//FS)/.simsync//FS//PowerExpand//EA)/.simsync,{i,0,1},{j,i,1}]
+			}//Flatten;
+	
+	
+	Ngs = EA[Inverse[Vgs]]/.simsync // FS;
+	
+	Do[vgsync1[i,j]=Vgs[[i+1,j+1]];ngsync1[i,j]=Ngs[[i+1,j+1]],{i,0,3},{j,0,3}];
+	
+	Do[FupA[i,k]=Sum[(D[A[m]@@vary,y[l]]-D[A[l]@@vary,y[m]]) vgsync1[i,l] vgsync1[m,k],{l,0,3},{m,0,3}],  {i,0,3},{k,0,3}];
+	
+	maxw1 = Table[Numerator[Sum[D[gs[y[0], y[1]] FupA[i, j], y[j]], {j, 0, 3}] + gs[y[0], y[1]] J[i]], {i, 0, 3}];
+	
+	maxw1 = ((maxw1 /. gsderivsremover // EA) /. simsync // EA) /. simsync // EA;
+	
+	Aup=Table[Sum[vgsync1[i,j] A[j]@@vary,{j,0,3}],{i,0,3}];
+	
+	lorGauge=Solve[0==Sum[D[gs[y[0], y[1]] Aup[[j+1]],y[j]],{j,0,3}], D[A[0]@@vary,y[0]]][[1,1]];
+	
+	lorGauge = ((lorGauge /. gsderivsremover // EA) /. simsync // EA) /. simsync // EA;
+		
+	DlorGauge=Table[D[lorGauge,y[i]],{i,0,3}];
+	
+	DlorGauge = ((DlorGauge /. gsderivsremover // EA) /. simsync // EA) /. simsync // EA;
+	
+					
+					Do[G[i,j,k]=Sum[vgsync1[k,m](D[ngsync1[i,m],y[j]]+D[ngsync1[j,m],y[i]]-D[ngsync1[i,j],y[m]])/2,{m,0,3}];
+						(*If[G[i,j,k]=!=0,Print[Subsuperscript[\[CapitalGamma],SF["````",i,j],SF["  ``",k]],"  =  ",G[i,j,k]/.w];];*)
+						G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+					
+					Do[R[i,k]=Sum[D[G[i,k,j],y[j]]-D[G[i,j,j],y[k]]+Sum[G[i,k,j]*G[j,m,m],{m,0,3}]-Sum[G[i,j,m]*G[k,m,j],{m,0,3}],{j,0,3}]//EA;
+						(*Print[SB[R,SF["````",i,k]],"  =  ",R[i,k]];*)
+						,{i,0,3},{k,i,3}];
+	
+	simqq=Solve[((((R[0,0]/.gsderivsremover//EA)/.simsync//EA)/.simsync//EA)/.simsync//EA)==R00/.Gdown[2,3]''[y[0]y[1]]^2->z,z][[1,1]]/.z->Gdown[2,3]''[y[0]y[1]]^2//FS;
+		
+	
+	
+	Do[nablaA[be,de]=D[A[de]@@vary,y[be]]-Sum[G[de,be,ka] A[ka]@@vary,{ka,0,3}]; 	,{de,0,3},{be,0,3}];
+							
+	DalA1=Table[Sum[vgsync1[ga,de]Sum[vgsync1[al,be](D[nablaA[be,de],y[al]]-Sum[G[al,be,la]nablaA[la,de],{la,0,3}]-Sum[G[al,de,la]nablaA[be,la],{la,0,3}]),{al,0,3},{be,0,3}],{de,0,3}],{ga,0,3}]//EA;
+	
+	
+			
+	DalA1=(((DalA1/.gsderivsremover//EA)/.simsync//EA)/.simsync//EA)/.simsync//EA;
+	
+	DalA={
+		Solve[DalA1[[1]]==DalAup[0],D[A[0]@@vary,y[1],y[1]]][[1,1]],
+		Solve[DalA1[[2]]==DalAup[1],D[A[1]@@vary,y[0],y[0]]][[1,1]],
+		Solve[DalA1[[3]]==DalAup[2],D[A[2]@@vary,y[0],y[0]]][[1,1]],
+		Solve[DalA1[[4]]==DalAup[3],D[A[3]@@vary,y[0],y[0]]][[1,1]]
+		};
+				
+		
+				
+	Do[testo[i]=((maxw1[[i]]/.DalA[[i]]/.DlorGauge/.lorGauge/.simqq//EA)/.simsync//EA)/.simqq//EA//FS,{i,4}];
+	
+	
+	Header=" Short Form of maxw1ell Eq-ns in Synchronous CS in the Lorentz gauge, simplified with the Dalembertian";
+		Name=testo;
+		Type="Vector";
+		Action:=Numerator[testo[i+1]][[3]];
+		newPrintingFunction;
+
+	blockTime=Date[]-thisBlockBegin;
+	Print["Time of TestShortFormmaxw1Eq = ",blockTime];
+
+	
+	Do[eq[i] = ((maxw1[[i]] /. DlorGauge /. lorGauge /. simqq // EA) /. simsync // EA) /. simqq /. R00 -> 0 // EA // FS;eq[i] = Numerator[eq[i]], {i, 4}];
+	eq[1]=eq[1][[3]];
+	eq[2]=eq[2][[3]];
+	
+	Header=" Full Form of maxw1ell Eq-ns in Synchronous CS in the Lorentz gauge";
+		Name=eq;
+		Type="Vector";
+		Action:=eq[i+1];
+		epilog=" = 0";
+		newPrintingFunction;
+
+	Aup=.;
+	
+	
+	
+	FoF[D[gs[y[0], y[1]], y[0]], SB[\[Gamma], ",0"]];
+	FoF[D[gs[y[0], y[1]], y[1]], SB[\[Gamma], ",1"]];
+	FoF[D[gs[y[0], y[1]], y[0],y[0]], SB[\[Gamma], ",00"]];
+	FoF[D[gs[y[0], y[1]], y[0],y[1]], SB[\[Gamma], ",01"]];
+	FoF[D[gs[y[0], y[1]], y[1],y[1]], SB[\[Gamma], ",11"]];
+	FoF[vs[it_, jt_], SPB["g", "s", SF[" ````", it, jt]]];
+	
+	
+	Do[A /: A[i] @@ vary = Sum[ngsync1[i, j]Aup[j] @@ vary, {j, 0, 3}],{i,0,3}]; 
+    Do[FupA[i, k] = (Sum[(D[A[m] @@ vary, y[l]] - D[A[l] @@ vary, y[m]]) vgsync1[i, l] vgsync1[m, k], {l, 0, 3}, {m, 0, 3}] // EA) /. simsync // EA, {i, 0, 3}, {k, 0, 3}];
+	
+	
+	Header=" Full Form of maxw1ell Eq-ns in Sync. CS in the Lorentz gauge for contravariant A ";
+		Name=maxw1Up;
+		Type="Vector";
+		Action:=Numerator[ Sum[D[gs[y[0], y[1]] FupA[i, j], y[j]], {j, 0, 3}] + gs[y[0], y[1]] J[i]//FS]//EA;
+		epilog=" = 0";
+		newPrintingFunction;
+	
+	
+	(* convolutions, bad & hard ----- *)
+	
+	gg1 = Table[Solve[vgsyncLowG[m, n] == vs[m, n], Gdown[m, n]'[y[0]y[1]]], {m, 2, 3}, {n, m, 3}] // Flatten;
+	gg2 = Table[y[n]*it__ -> -vs[1, n]y[0]^2/y[1]*it, {n, 2, 3}] // Flatten;
+	ga0 = Solve[gsderivsremover[[1]] /. Rule -> Equal, Gdown[3, 3]''[y[0]y[1]]][[1,1]] /. simsync // EA;
+	
+	
+	
+	ga1 = Solve[gsderivsremover[[3]] /. Rule -> Equal,           Gdown[3, 3]'''[y[0]y[1]]][[1, 1]] /. simsync // EA;
+	ga2 = Solve[gsderivsremover[[4]] /. Rule -> Equal,           Gdown[3, 3]'''[y[0]y[1]]][[1, 1]] /. simsync // EA;
+	ga3 = Solve[gsderivsremover[[5]] /. Rule -> Equal,           Gdown[3, 3]'''[y[0]y[1]]][[1, 1]] /. simsync // EA;
+	
+	simqq=Solve[(((((R[0, 0] /. ga3 // EA) /. simsync // EA) /. simsync // EA) /. ga0 // EA) /.     simsync // EA)==R00 /.Gdown[2,3]''[y[0]y[1]]^2->z,z][[1,1]]/.z->Gdown[2,3]''[y[0]y[1]]^2//FS;
+	
+	
+	
+	q1 = (((eq[0] /. ga0 /. gg1 // FS) /. gg2 // FS) /. y[1]^2 -> -vs[1, 1]y[0]^2 //     FS)[[5]];
+	
+	Print["------",q1," = 0"];
+	
+
+];
+
+
+MaxwEqSynchronCS:=Block[{},					(* an old shit, renewed 14.06.2024, but still shit *)
+
+	If[runSyncMetric=!=1,SyncMetric];
+	runMaxwEqSynchronCS=1;
+
+	Print[];
+	Print[];
+	Print["=========================== Maxw. Eq. Priv. to Synchr. CS Transition ==============================================="];
+	
+		Clear[maxwF, maxwA, maxwFup, maxwAup];
+
+
+	Do[A/:A[i]@@vary=A[i][y[1],y[2],y[3]]Cos[Om y[0]+al],{i,0,3}];
+	Do[Aup/:Aup[i]@@vary=Aup[i][y[1],y[2],y[3]]Cos[Om y[0]+al],{i,0,3}];
+	
+	Do[F/:F[i,i]@@vary=0,{i,0,3}];
+	Do[F/:F[j,i]@@vary=-F[i,j]@@vary,{i,0,3},{j,i+1,3}];
+	Do[Fup/:Fup[i,i]@@vary=0,{i,0,3}];
+	Do[Fup/:Fup[j,i]@@vary=-Fup[i,j]@@vary,{i,0,3},{j,i+1,3}];
+
+	Do[FupF[i,j]=Sum[F[l,m]@@vary vgsync[i,l] vgsync[m,j],{l,0,3},{m,0,3}],  {i,0,3},{j,0,3}];
+	Do[FupA[i,j]=Sum[(D[A[m]@@vary,y[l]]-D[A[l]@@vary,y[m]]) vgsync[i,l] vgsync[m,j],{l,0,3},{m,0,3}]/.sim//FS,  {i,0,3},{j,0,3}];
+	Do[FupFup[i,j]=Fup[i,j]@@vary,  {i,0,3},{j,0,3}];
+	
+	Max2y[FupLocal_,maxw_]:=Block[{},
+		(*maxw=Table[(Numerator[  Sum[D[d2 FupLocal[i,j],y[j]],{j,0,3}]+d2 4pi/cc J[i]@@vary//EA//FS]//EA)/.sim//FS,	{i,0,3}];*)
+		maxw=Table[(Numerator[  Sum[D[d2 FupLocal[i,j],y[j]],{j,0,3}]+d2 4pi/cc J[i]@@vary]),	{i,0,3}];
+		maxw[[1]]=maxw[[1]]/d2;
+		texListPrint[maxw," = 0"]
+	];
+	
+	(* An example of usage: *)
+	
+	simS={Cos[Om y[0]+al]->C,Sin[Om y[0]+al]->S};
+	
+	If[noFdonwJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with F in Sync. CS "];					Max2y[FupF,maxwF]];
+
+	If[noFupJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant F in Sync. CS "];		Max2y[FupFup,maxwFup]];
+		
+	If[noAdonwJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with A in Sync. CS "];					Max2y[FupA,maxwA]];
+	
+	If[noAupJupMaxw=!=1,
+		texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant A in Priv. CS "];
+		Do[G[i,j,k]=Sum[vgsync[k,m](D[ngsync[i,m],y[j]]+D[ngsync[j,m],y[i]]-D[ngsync[i,j],y[m]])/2,{m,0,3}]//FS; G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+			G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
+			G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
+	
+		Do[FupAup[i,i]=0,{i,0,3}];	
+		Do[FupAup[i,j]=Sum[vgsync[i,l](D[Aup[j]@@vary,y[l]]+Sum[G[k,l,j]Aup[k]@@vary,{k,0,3}]),{l,0,3}]-Sum[vgsync[j,l](D[Aup[i]@@vary,y[l]]+Sum[G[k,l,i]Aup[k]@@vary,{k,0,3}]),{l,0,3}]//EA;
+		FupAup[j,i]=-FupAup[i,j],{i,0,3},{j,i+1,3}];
+		Max2y[FupAup,maxwAup]
+	];
+	
+];
+
+ChargeConservSynchronCS:=Block[{}, 
+	
+	If[runSyncMetric=!=1,SyncMetric];
+	runChargeConservSynchronCS=1;
+	
+	texHeadPrint[" Char. conserv. with contravar. J in Synchr. CS "];
+	
+	ccl=(Sum[D[d3 J[i]@@vary,y[i]],{i,0,3}]//FS)/.antisim;
+	texListPrint[ccl," = 0"];
+];
+
+DelayCorrespSynchronCS:=Block[{},
+
+	If[runTrans=!=1,Trans];
+	Which[dataFileName=="model2", If[runTwoArbitraryPoints31SkipedCalculations=!=1,TwoArbitraryPoints31SkipedCalculations],
+		dataFileName=="model2nu0",If[runTwoArbitraryPoints31SkipedCalculations=!=1,TwoArbitraryPoints31SkipedCalculations],
+		True,If[runTwoArbitraryPoints=!=1,TwoArbitraryPoints;eqq=eqqF]
+	];
+	runDelayCorrespSynchronCS=1;
+		
+	Print[];
+	Print[" ================ DelayCorrespSynchronCS is working, 11.09.2024 ==============="];
+	
+	
+		
+	texHeadPrint[" Relation btw S & D in Synch. CS "];
+		trS = Table[trans[i], {i, 0, 3}] /. x -> xS /. y -> yS;
+		trD = Table[trans[i], {i, 0, 3}] /. x -> xD /. y -> yD;
+		eqqS = eqq /. trS /. trD // FS;
+		texListPrint[eqqS," = 0"];
+		
+	texHeadPrint[" Full Form "];
+		eqqSF = (-18*ga^4*Log[yD[0]*yD[1]]*yD[1]^2*yS[0]*yS[1] + 3*ga^2*yD[1]*yS[1]*((-(Log[yD[0]*yD[1]] - Log[yS[0]*yS[1]])^3 + 6*ga^2*Log[yS[0]*yS[1]])*yD[1]*yS[0] + (6*ga^2 + (Log[yD[0]*yD[1]] - Log[yS[0]*yS[1]])^2)*(Log[yD[0]*yD[1]] - Log[yS[0]*yS[1]])*yD[0]*yS[1]) + 6*ga^2*Cos[2*fi]*(3*ga^2*(Log[yD[0]*yD[1]] - Log[yS[0]*yS[1]])*yD[1]*yS[1]*(yD[1]*yS[0] - yD[0]*yS[1]) + Csc[fi]^2*Log[yD[0]*yD[1]]*Log[yS[0]*yS[1]]*(-3*(yD[2]^2 + ga^2*yD[3]^2)*yS[1]^2 - 3*yD[1]*yS[2]*(-2*yD[2]*yS[1] + yD[1]*yS[2]) + Log[yD[0]*yD[1]]*Log[yS[0]*yS[1]]*(yD[3]*yS[1] - yD[1]*yS[3])^2)) + Log[yD[0]*yD[1]]*Log[yS[0]*yS[1]]*(36*ga^3*yD[1]*(ga*yS[3]*(-2*yD[3]*yS[1] + yD[1]*yS[3]) - 2*Cos[fi]*(yD[3]*yS[1]*yS[2] + (yD[2]*yS[1] - yD[1]*yS[2])*yS[3])) + Csc[fi]^2*(-18*ga^3*Cos[3*fi]*yD[2]*yD[3]*yS[1]^2 + 3*(6*ga^2 + Log[yS[0]*yS[1]]^2)*((yD[2]^2 + ga^2*yD[3]^2)*yS[1]^2 - 2*yD[1]*yD[2]*yS[1]*yS[2] + yD[1]^2*yS[2]^2) - 6*ga^2*Log[yS[0]*yS[1]]^2*yD[1]*yD[3]*yS[1]*yS[3] + 3*ga^2*Log[yS[0]*yS[1]]^2*yD[1]^2*yS[3]^2 + 3*Log[yD[0]*yD[1]]*Log[yS[0]*yS[1]]*(yD[2]^2*yS[1]^2 + yD[1]*yS[2]*(-2*yD[2]*yS[1] + yD[1]*yS[2]) - Log[yS[0]*yS[1]]*(yD[2]*yS[1] - yD[1]*yS[2])*(yD[3]*yS[1] - yD[1]*yS[3]) - ga^2*(yD[3]*yS[1] - yD[1]*yS[3])^2) + Log[yD[0]*yD[1]]^2*(3*yD[2]^2*yS[1]^2 - 3*Log[yS[0]*yS[1]]*(yD[2]*yS[1] - yD[1]*yS[2])*(yD[3]*yS[1] - yD[1]*yS[3]) + Log[yS[0]*yS[1]]^2*(yD[3]*yS[1] - yD[1]*yS[3])^2 + 3*(yD[1]*yS[2]*(-2*yD[2]*yS[1] + yD[1]*yS[2]) + ga^2*(yD[3]*yS[1] - yD[1]*yS[3])^2))) + 3*ga*Cot[fi]*Csc[fi]*(6*ga^2*yD[2]*yD[3]*yS[1]^2 + (yD[3]*yS[1] - yD[1]*yS[3])*(2*Log[yS[0]*yS[1]]^2*(yD[2]*yS[1] - yD[1]*yS[2]) + Log[yD[0]*yD[1]]^2*(2*yD[2]*yS[1] - 2*yD[1]*yS[2] + Log[yS[0]*yS[1]]*(-(yD[3]*yS[1]) + yD[1]*yS[3])) + Log[yD[0]*yD[1]]*Log[yS[0]*yS[1]]*(2*yD[2]*yS[1] - 2*yD[1]*yS[2] + Log[yS[0]*yS[1]]*(-(yD[3]*yS[1]) + yD[1]*yS[3]))))))/(ga^2*yD[1]^2*yS[1]^2);
+		If[!ValueQ[eqqSF],eqqSF=eqqS/.DelIT[it_]->xD[it]-xS[it]/.trS/.trD//FS,Print["Early calculated value"]];
+		texListPrint[eqqSF," = 0"];
+];
+	
+
+(* ------------ EXPERIMENTAL ----------------------*)
+
+MaxwEqSynchronCSexperimental:=Block[{},
+
+	(* goal: to simplify separated coefficients & assembly whole eq-n after it *)
+
+	If[runSyncMetric=!=1,SyncMetric];
+	runMaxwEqSynchronCS=1;
+
+	Print[];
+	Print[];
+	Print["=========================== Experiment ==============================================="];
+	
+	Clear[F];
+	Do[F[i,i][y[0],y[1],y[2],y[3]]=0,{i,0,3}];
+	Do[F[j,i][y[0],y[1],y[2],y[3]]=-F[i,j][y[0],y[1],y[2],y[3]],{i,0,3},{j,i+1,3}];
+	Do[FupF[i,k]=Sum[F[l,m]@@vary vgsync[i,l] vgsync[m,k],{l,0,3},{m,0,3}],  {i,0,3},{k,0,3}];
+	
+	Max2[maxw_]:=Block[{},
+		
+		Print[" Coefficients at components of $F_{kl}$ in  Maxwell Eq. with index i "];
+		
+		Do[If[k=!=l,coefAtFkl[i,k,l]=Sum[vgsync[i,k]vgsync[j,l]D[Log[d2],y[j]],{j,0,3}]+
+			Sum[D[vgsync[i,k],y[j]]vgsync[j,l],{j,0,3}]+vgsync[i,k]Sum[D[vgsync[j,l],y[j]],{j,0,3}]/.Log[y[0] y[1]]->L];
+		,{i,0,3},{k,0,3},{l,0,3}];
+		
+		Do[coefAtFcoupled[i,k,l]=coefAtFkl[i,k,l]-coefAtFkl[i,l,k]//FS; 
+			coefAtFcoupled[i,k,l]=coefAtFcoupled[i,k,l]/.simplificationhelper//FS; 
+			Print[i," ",k,l,"      ",coefAtFcoupled[i,k,l]]
+		,{i,0,3},{k,0,3},{l,k+1,3}];
+		
+		
+		Print[" Coefficients at j-th derivatives of $F_{kl}$ in i-th Maxwell Eq. "];
+		
+		Do[If[k=!=l,coefAtDerivjFkl[i,k,j,l]=vgsync[i,k]vgsync[j,l]/.Log[y[0] y[1]]->L];
+		,{i,0,3},{j,0,3},{k,0,3},{l,0,3}];
+		
+		Do[coefAtDerivFcoupled[i,k,j,l]=coefAtDerivjFkl[i,k,j,l]-coefAtDerivjFkl[i,l,j,k]//FS; 
+			coefAtDerivFcoupled[i,k,j,l]=coefAtDerivFcoupled[i,k,j,l]/.simplificationhelper//FS; 
+			Print[i," ",k,j,l,"      ",coefAtDerivFcoupled[i,k,j,l]]
+		,{i,0,3},{k,0,3},{l,k+1,3},{j,0,3}];
+		
+	
+	
+	
+		Do[maxw[i]=Sum[coefAtFcoupled[i,k,l]F[k,l]@@vary,{k,0,3},{l,k+1,3}] + 
+			Sum[(coefAtDerivFcoupled[i,k,j,l])D[F[k,l]@@vary,y[j]],{k,0,3},{l,k+1,3},{j,0,3}]+J[i];
+			
+			Print[i,".   ",maxw[i]," = 0"]; texPrint["",maxw[i]," = 0"],
+		{i,0,3}];
+	];
+	
+	texHeadPrint[" 2 pair of Maxwell eq-ns with F in Synchr. CS "];
+	
+	Max2[maxwFexp];
+		(*
+	Do[ FA[i,j][y[0],y[1],y[2],y[3]]=D[A[i]@@vary,y[j]]-D[A[j]@@vary,y[i]],  {i,0,3},{j,0,3}];
+	Do[FupA[i,k]=Sum[FA[l,m]@@vary vgsync[i,l] vgsync[m,k],{l,0,3},{m,0,3}],  {i,0,3},{k,0,3}];
+		
+	texHeadPrint[" 2 pair of Maxwell eq-ns with A in Synchr. CS "];
+
+	Max2[FA,maxwAexp];
+	*)
+];
+
+
+MaxwEqForFreeFallingSource:=Block[{},		(* new at 21.03.2024 *)
+
+	If[runSyncMetric=!=1,SyncMetric];
+	runMaxwEqForFreeFallingSource=1;
+	
+	
+	(* this is old velobike and it's blocked just now *)
+	
+	Do[F/:F[i,i]@@vary=0,{i,0,3}];
+	Do[F/:F[j,i]@@vary=-F[i,j]@@vary,{i,0,3},{j,i+1,3}];
+	Do[FupF[i,k]=Sum[F[l,m]@@vary vgsync[i,l] vgsync[m,k],{l,0,3},{m,0,3}],  {i,0,3},{k,0,3}];
+	
+	Max2[Fup_,maxw_]:=Block[{},
+		Do[
+			maxw[i]=Sum[D[d2 Fup[i,j],y[j]],{j,0,3}]+4 pi/cc d2 Jsync[i]//FS;
+			maxw[i]=Numerator[maxw[i]/.sim//Simplify];
+			maxw[i]=maxw[i]/.sim//Simplify;
+			Print[i,".   ",maxw[i]," = 0"]; 
+		,{i,0,3}];
+		
+	];
+
+	(*Max2[FupF,maxwF];*)
+	
+];
+
+StatChargeRadToPrivCSBackTransform:=Block[{},		(* stupid, but, may be, usefull *)
+	
+	If[runSyncMetric=!=1,SyncMetric];
+	runStatChargeRadToPrivCSBackTransform=1;
+	
+	OF[" \\section{Radiation of free falling charge}"]>>>texoutput.tex;
+	
+		FoF[ yS @it_, SPB["y","S",SF[" ``",it]]];
+	
+	Header=" The Current of a static charge in the Synhcron CS ";
+		Name=Jsynchron;
+		Type="Vector";
+		Jsynchron[_]=0;	Jsynchron[0]=ee cc/d2 DiscreteDelta[y[1]-yS[1],y[2]-yS[2],y[3]-yS[3]];
+		Action:=Jsynchron[i];
+		prolog=Jsync[i];
+		newPrintingFunction;
+	
+	Header=" The Current in the Privileged CS in Y variables ";				(* 17.04.2024, first case of the 'newPrintingFunction' *)
+		Name=JprivY;
+		Type="Vector";
+		Action:=jacobian[i,0] Jsync[0];
+		prolog=Jprivil[i];
+		Beauty={WPQ,FS};
+		newPrintingFunction;
+    
+    Header=" The Current in the Privileged CS in X variables ";				(* 17.04.2024, second case of the 'newPrintingFunction' *)
+		Name=JprivX;
+		Type="Vector";
+		Action:=JprivY[i]/.TransToPriv//FS;
+		prolog=Jprivil[i];
+		Beauty=WPQ;
+		newPrintingFunction;
+        
+    
+    Print["Short form of JprivX[1]"];
+		G[3, 2][z_] = G[2, 3][z];Gdown[3, 2][z_] = Gdown[2, 3][z];
+		s3=Solve[(Sum[x[s]x[r]Gdown[r,p][z]Gdown[s,q][z]G[p,q]'[z],{s,2,3},{r,2,3},{p,2,3},{q,2,3}]/.x[2]^2Gdown[2,2][z]^2G[2,2]'[z]->y)==GPQRS,y][[1,1]]/.y->x[2]^2Gdown[2,2][z]^2G[2,2]'[z]/.z->x[0]//EA;
+		t3=(JprivX[1] /. Take[simLowG, 3]//EA)/.s3//FS;
+		Format[GPQRS]=SPS["x","p"]SPS["x","q"]SB["G","pr"]SB["G","qs"]SPS["G'","rs"];
+		Print[Jprivil[1]," = ",t3];
+    
+    
+    Print[ "We can use the GPQ because the Current is not differentiated during Maxw Eq-ns calculus" ];
+    OF["where Q is defined in (\\ref{gpq_definition}).\\\\"]>>>texoutput.tex;
+        
+	Do[J/:J[i]@@var=JprivX[i];,{i,0,3}];    
+    MaxwEqPrivilegedCS;
+    
+];
+
+
+MaxwEqNoCurrent:=Block[{},							(* separeted 05.06.2024 *)
+	
+	If[runStatChargeRadToPrivCSBackTransform=!=1,runStatChargeRadToPrivCSBackTransform];
+	runMaxwEqNoCurrent=1;
+    
+    
+    texHeadPrint[" Let us to eliminate the Current from Maxw. Eq-ns with F "];					(* 27.03.2024 *)
+		s1 = Solve[maxwF[[1]] == 0, Jsync[0]][[1,1]];
+		current0F=Equal@@s1;
+		texListPrint[current0F];
+	OF[""]>>>mathoutput;
+		OF["(* Left parts of Maxw. Eq-ns in Priv. CS without J[0] for F *)"]>>>mathoutput;
+		maxwFnocur = Table[DeleteCases[maxwF[[i+1]]/.s1//FS, (GPQ x[0])^__], {i, 3}];
+		texListPrint[maxwFnocur," = 0"];
+	
+	
+    
+    texHeadPrint[" The same for Maxw. Eq-ns with vector potential A "];
+		s2 = Solve[maxwA[[1]] == 0, Jsync[0]][[1,1]];
+		current0A=Equal@@s2;
+		texListPrint[current0A];
+    OF[""]>>>mathoutput;
+		OF["(* Left parts of Maxw. Eq-ns in Priv. CS without J[0] for A *)"]>>>mathoutput;
+		maxwAnocur = Table[DeleteCases[maxwA[[i+1]]/.s2//FS, (GPQ x[0])^__], {i, 3}];
+		texListPrint[maxwAnocur," = 0"];
+    
+];
+
+ShortFormMaxwEqPrivCSOldAndStupid:=Block[{},		(* separeted 05.06.2024 *)
+	
+	If[runMaxwEqNoCurrent=!=1,MaxwEqNoCurrent];
+	SortFormMaxwEqPrivCSOldAndStupid=1;	
+	
+	texHeadPrint[" Contravariant vector of electromagnetic potential A^i \\\\ "];
+		Aup=Table[Sum[vg[i,j] A[j]@@var,{j,0,3}],{i,0,3}];
+		prolog:=SPS["A",i-1];
+		texListPrint[Aup];
+		
+	
+	texHeadPrint[" Lorentz Gauge and it's derivatives "];
+		lorGauge=Solve[0==Sum[D[sqrtddet Aup[[j+1]],x[j]],{j,0,3}]//FS, D[A[0]@@var,x[1]]][[1,1]];
+		texListPrint[lorGauge];
+		DlorGauge=Table[D[lorGauge,x[i]],{i,0,3}];
+		texListPrint[DlorGauge];
+
+		
+	texHeadPrint[" Dalembertian of A^i \\\\ "];
+		Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS;	G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+		Do[nablaA[be,de]=D[A[de]@@var,x[be]]-Sum[G[de,be,ka] A[ka]@@var,{ka,0,3}],{de,0,3},{be,0,3}];
+				
+		DalA=Table[Sum[vg[ga,de]Sum[vg[al,be](D[nablaA[be,de],x[al]]-Sum[G[al,be,la]nablaA[la,de],{la,0,3}]-Sum[G[al,de,la]nablaA[be,la],{la,0,3}]),{al,0,3},{be,0,3}],{de,0,3}]//FS,{ga,0,3}];
+			DalA = DalA /. sim // FS; 
+			DalA = DalA /. sim2derivs // FS; 
+			DalA = DalA /. sim // FS//EA; 
+			DalA = DalA /. sim2derivs // FS; 
+			DalA = DalA /. sim // FS; 
+			DalA = DalA /. sim2derivs // FS; 
+		prolog:=DalAup[i-1];
+		texListPrint[DalA];
+	
+	
+	texHeadPrint[" Dalembertian of A^i\\ with Lorentz Gauge "];		
+			DalALor = DalA /. sim // FS; 
+			DalALor = EA[DalALor] /. sim2derivs // FS; 
+			DalALor = DalALor /. sim2derivs // FS; 
+			DalALor = DalALor /. sim // FS; 
+			DalALor = DalALor /. lorGauge /. DlorGauge // FS; 
+			DalALor = DalALor /. sim // FS; 
+		prolog:=DalAup[i-1];
+		texListPrint[DalALor];
+		
+		(* Osetrin wishes at 10.04.2024 *)
+		
+	texHeadPrint[" Maxwell eq-ns with Lorentz Gauge "];
+		maxwALor=maxwA/.lorGauge/.DlorGauge//FS;
+			maxwALor = Numerator[maxwALor /. sim // FS];
+		texListPrint[maxwALor," = 0"];
+		(*
+	texHeadPrint[" Current and Maxw. eq-ns without Current with Lorentz Gauge "];
+		s1lorG=s1/.lorGauge/.DlorGauge//FS;
+		texListPrint[s1lorG];
+		t1lorG=maxwFnocur/.lorGauge/.DlorGauge//FS;
+		texListPrint[t1lorG];
+		*)
+	texHeadPrint[" Maxwell eq-ns with Lorentz Gauge and Dalembertian "];
+		s4={
+		Solve[DalALor[[1]]==DalAup[0],D[A[1]@@var,x[3],x[3]]],
+		Solve[DalALor[[2]]==DalAup[1],D[A[1]@@var,x[0]]],
+		Solve[{DalALor[[3]]==DalAup[2],DalALor[[4]]==DalAup[3]},{D[A[1]@@var,x[2]],D[A[1]@@var,x[3]]}]}/.sim//Flatten//EA//FS;
+			
+			Print[s4];
+			
+		maxwALorDal=maxwALor/.s4//FS;		
+		maxwALorDal=(((EA[maxwALorDal]/.sim//EA)/.simOptForGij//EA)/.sim//FS)/.x[0]->z/.gpq/.z->x[0]/.ass//FS;		
+		(*maxwALorDalAup[[1]]=maxwALorDalAup[[1]][[3]];*)
+		maxwALorDalAup[[2]]=maxwALorDalAup[[2]][[2]];
+		maxwALorDalAup[[3]]=maxwALorDalAup[[3]][[3]];
+		maxwALorDalAup[[4]]=maxwALorDalAup[[4]][[3]];
+		
+		
+		texListPrint[maxwALorDal," = 0"];
+		
+	texHeadPrint[" Current and 3 Maxw. eq-ns without Current with Lorentz Gauge and Dalembertian "];
+		curJ0=Solve[maxwALorDalAup[[1]]==0,Jsync[0]][[1,1]];
+		currentJ0=Equal@@curJ0;
+		texListPrint[currentJ0];
+		maxwALDnoCur=Table[Collect[Numerator[(maxwALorDalAup[[i]]/.curJ0)/Sqrt[GPQ x[0]]//FS]/.antigpq/.z->x[0],{x[2],x[3]},FS],{i,2,4}];
+		maxwALDnoCur=maxwALDnoCur/.sim//FS;
+		maxwALDnoCur=maxwALDnoCur/.simOptForGij//FS;
+		maxwALDnoCur=maxwALDnoCur/. x[0] -> z /. gpq /. z -> x[0] // FS;
+		texListPrint[maxwALDnoCur," = 0"];
+		
+	texHeadPrint[" Non-trivial Einstein equation "];
+		standart;
+		qq=((R[0,0]/.sim//FS)/.sim2derivs//FS)/.sim//FS;
+		sisi=(Solve[D[ddet,x[0],x[0]]==g''[x[0]],G[2,2]'''[x[0]]][[1,1]]/.sim//FS)/.sim2derivs//FS;
+		ricci00=qq/.sisi//FS;
+		prolog=SB["R","00"];
+		texListPrint[ricci00," = 0"];
+		
+	
+	texHeadPrint[" Maxwell equation for A1 with Einst. eq-n "];	
+		pipi = Solve[ricci00 == 0 /. G[2, 3]''[x[0]]^2 -> z, z][[1, 1]] /.     z -> G[2, 3]''[x[0]]^2;
+		mumu=(maxwALorDalAup[[2]] /. pipi // FS)[[3]];
+		texListPrint[mumu," = 0"];
+		
+	texHeadPrint[" The same without current "];	
+		mumu1=(maxwALDnoCur[[1]] /. pipi // FS)[[3]];
+		texListPrint[mumu1," = 0"];
+		
+		(*! *) Clear[J];FoF[ J[it_]@__, SPS["J",it]];
+		
+	texHeadPrint[" Maxwell eq-ns with Lorentz Gauge and Dalembertian with R00 "];
+		det2derivsRemover=Solve[ricci00==R00/.G[2,3]''[x[0]]^2->z,z][[1,1]]/.z->G[2,3]''[x[0]]^2//FS;
+		MaxwEqPrivilegedCS;
+		maxwALorDalJarbitr=(maxwA/.lorGauge/.DlorGauge/.s4//FS)/.sim//FS;
+		qq=(maxwALorDalJarbitr/.det2derivsRemover//FS)/.sim//FS;
+		texListPrint[qq," = 0"];
+		
+		(* finished 02.05.2024 *)
+];
+
+
+
+
+RicciSync:=Block[{},							(* 03.06.2024, verified by stupid direct calculation *)
+
+	If[runSyncMetric=!=1,SyncMetric];
+	runRicciSync=1;
+	
+	Print[" ================ RicciSync is working, 03.06.2024 ==============="];
+	
+	standart; 	Do[R[i,k]=(((R[i,k]/.sim2derivs//EA)/.sim//EA)/.sim//EA)/.sim2derivs//FS,{i,0,3},{k,0,3}];
+	
+	Header=" Ricci tensor in Synchronous CS ";
+		Name=Rsync;
+		Type="SymMatrix";
+		Action:=Sum[R[k,l]jacobian[l,i]jacobian[k,j],{l,0,3},{k,0,3}]/.TransToSync;
+		prolog=SB[R,SeqF[i,j]];
+		
+		newPrintingFunction;
+		
+	texHeadPrint[" Scalar curvature in  Synchronous CS "];
+		RRsync=Sum[Rsync[i,j]vgsync[i,j],{i,0,3},{j,0,3}];
+		
+		texListPrint[RRsync];
+
+];
+
+OsetrinWishes130624:=Block[{},
+
+	If[runMaxwEqPrivilegedCSAdd=!=1,MaxwEqPrivilegedCSAdd];
+	If[runTwoArbitraryPoints=!=1,TwoArbitraryPoints];
+	runOsetrinWishes130624=1;
+	
+	texHeadPrint["============ OsetrinWishes130624 is working, 16.06.2024 ============="];
+	
+	FoF[A0[__], SPS["A", 0]];
+	Z = eqqF/eqqF[[3, 3]] /. xD[it_] -> x[it];
+	
+	(* ! *) BB[pods, {D[Aup[0]@@var,x[1]]->D[A0[Z],x[1]],D[Aup[0]@@var,x[0],x[1]]->D[A0[Z],x[0],x[1]],Table[D[Aup[0]@@var,x[p],x[q]]->D[A0[Z],x[p],x[q]]//FS,{p,2,3},{q,p,3}]}//FS//Flatten];
+	noTex=1;
+	texListPrint[pods];
+	
+	(* ! *) BB[eq, maxwDalAup[0] /. pods // FS];
+	texListPrint[eq,SequenceForm[" = ",-4pi/cc J[0]]];
+	sO1=G[it_, jt_][xS[at_]] -> -delG[it, jt] + G[it, jt][x[at]];
+	
+	(* ! *) BB[eq1, (eq /. sO1 // FS) //. simOptional2 // FS];
+	texListPrint[eq1,SequenceForm[" = ",-4pi/cc J[0]]];						(* 'SeqF' does not work with 'texListPrint'! *)
+
+];
+
+EinstEqWithDust2:=Block[{},
+
+	If[runStupidSyncMetric=!=1,StupidSyncMetric];
+	runEinstEqWithDust2=1;
+	Print[" ================ EinstEqWithDust2 is working, 28.06.2024 ==============="];
+	
+	
+	FoF[l[it_],SB["l",it]];
+	
+		
+	standart;
+	
+	R[0,0] = ((((R[0, 0] // EA) /. sim // EA) /. sim // EA) /. sim2derivs // EA) /.       sim // FS;
+	R[0,1] = (((R[0, 1] // EA) /. sim // EA) /. sim2derivs // EA) /. sim // FS;
+	R[0,2] = (((R[0, 2] // EA) /. sim // EA) /. sim2derivs // EA) /. sim // EA;
+	R[0,3] = (((R[0, 3] // EA) /. sim // EA) /. sim2derivs // EA) /. sim // EA;
+	RR=RR/.sim;
+	
+	
+	FoF[ric[it_,jt_],SB["R",SequenceForm[i,j]]];
+	
+	Header=" Ricci tensor in Privileged CS ";
+		Name=Ricci;
+		Type="SymMatrix";
+		Action:=R[i,j];
+		prolog=ric[i,j];
+		newPrintingFunction;
+	
+	texHeadPrint[" Scalar curvature "];
+		prolog="R";
+		texListPrint[RR];
+		
+	Header=" Ein. eq-ns with dust matter and Lambda in the Privileged CS ";
+		Name=EinDustPriv;
+		Type="SymMatrix";
+		Action:=((R[i,j]-ng[i,j] RR/2-Tdust[i,j]-ep l[i] l[j] -ng[i,j] La))/.sim;
+		Enumerate=1;
+		epilog=" = 0";
+		Beauty={WPQ};
+		newPrintingFunction;
+		
+	texHeadPrint[" Norm condition for electromagnetic wave vector "];
+		normL=Sum[vg[i,j]l[i]l[j],{i,0,3},{j,0,3}];
+		texListPrint[normL," = 0"];
+	
+	texHeadPrint[" Elimination of vector components from norm condition and Einst. eq-ns "];
+		econvol = (Sum[EinDustPriv[i, j]vg[i, j], {i, 0, 3}, {j, 0, 3}] + ep normL //             EA) /. sim // EA // FS;
+		texListPrint[econvol," = 0"];
+
+	(* calculus for killing of general case *)
+	(*
+	bz = {b[2]'[x[0]]^2 -> b22, b[2]'[x[0]]b[3]'[x[0]] -> b23,     b[3]'[x[0]]^2 -> b33};
+	bzback = Table[bz[[i, 2]] -> bz[[i, 1]], {i, 3}];
+	s0 = Solve[{(EinDustPriv[2, 2] // EA) == 0,
+                (EinDustPriv[2, 3] // EA) == 0,
+                (EinDustPriv[3, 3] // EA) == 0} /. bz, {b22, b23, b33}][[1]] /. bzback /. sim // EA;
+     Do[eq[i, j] = ((EinDustPriv[i, j] // EA) /. s0 // EA) /. sim // EA;   Print[i, j, ".  ", eq[i, j]], {i, 0, 3}, {j, i, 3}];
+     s1 = Solve[{eq[1, 2] == 0, eq[1, 3] == 0}, {b[2][x[0]], b[3][x[0]]}][[1]];
+     t2 = la[2]b[2][x[0]] + la[3]b[3][x[0]] /. s1 // FS;
+     Print[t2];
+	*)
+			
+];
+
+(* ======================= ADDITIONAL =========================*)
+
+riemann:=Block[{},Do[R[i,k,l,m]=(D[ng[i,m],x[k],x[l]]+D[ng[k,l],x[i],x[m]]-D[ng[i,l],x[k],x[m]]-D[ng[k,m],x[i],x[l]])/2+Sum[ng[n1,p](G[k,l,n1]G[i,m,p]-G[k,m,n1]G[i,l,p]),{p,0,n},{n1,0,n}],{i,0,3},{k,0,3},{l,0,3},{m,0,3}]];
+
+
+weyl:=Block[{n},
+	Print["		Riemann tensor"];
+	
+	n=3;
+	
+	Do[R[i,k,l,m]=0,{i,0,n},{k,0,n},{l,0,n},{m,0,n}];
+	Do[R[i,k,l,m]=(D[ng[i,m],x[k],x[l]]+D[ng[k,l],x[i],x[m]]-D[ng[i,l],x[k],x[m]]-D[ng[k,m],x[i],x[l]])/2+Sum[ng[n1,p](G[k,l,n1]G[i,m,p]-G[k,m,n1]G[i,l,p]),{p,0,n},{n1,0,n}];
+		Print[i,k,l,m," ",R[i,k,l,m]];	
+		,{i,0,2},{k,i+1,3},{l,i,2},{m,Max[k,l+1],3}];
+	
+	Print["R = ",RR];
+		
+	Print["		Weyl tensor"];
+		
+	Do[W[i,k,l,m]=R[i,k,l,m]-R[i,l]*ng[k,m]/2+R[i,m]*ng[k,l]/2+R[k,l]*ng[i,m]/2-R[k,m]*ng[i,l]/2+RR*(ng[i,l]*ng[k,m]-ng[i,m]*ng[k,l])/6;
+		Print[i,k,l,m," ",W[i,k,l,m]];
+		,{i,0,2},{k,i+1,3},{l,i,2},{m,Max[k,l+1],3}];
+];
+
+(* ======================= NEW IN THIS FILE ( july 2024, before Ural ) =========================*)
+
+GeometryBeautification:=Block[{},
+
+	standart;weyl;
+	
+	texHeadPrint["Non-zero components of Ricci, Riemann and Weyl tensors"];
+		r00=R[0,0]/.sim//FS;
+		prolog=SB["R",SequenceForm[0,0]];
+		texListPrint[r00];
+	
+	Do[If[R[i,k,l,m]=!=0,
+		Rsim[i,k,l,m]=(R[i,k,l,m]/.sim//FS)/.sim//FS;
+		prolog=SB["R",SequenceForm[i,k,l,m]];
+		texListPrint[Rsim[i,k,l,m]];
+		];
+	,{i,0,2},{k,i+1,3},{l,i,2},{m,Max[k,l+1],3}];
+	
+	Do[If[W[i,k,l,m]=!=0,
+		Wsim[i,k,l,m]=(W[i,k,l,m]/.sim//FS)/.sim//FS;
+		prolog=SB["C",SequenceForm[i,k,l,m]];
+		texListPrint[Wsim[i,k,l,m]];
+		];
+	,{i,0,2},{k,i+1,3},{l,i,2},{m,Max[k,l+1],3}];
+		
+	texHeadPrint[" Scalar curvature "];
+		prolog="R";
+		texListPrint[RR];
+
+];
+
+	
+
+
+(* +++++++++++++++ 1. calculus for the case \lambda_1\neq 0, see 'universe.tex' ++++++++++++++ *)
+	
+Calculus1:=Block[{},
+
+	If[runHamJac=!=1,HamJac];
+	runCalculus1=1;
+	
+	Print[" ================ Calculus1 is working, 25.09.2024 ==============="];
+	
+	(*OF[" \\section{Case $\\lambda_1\\neq 0$}"]>>>texoutput.tex;*)
+	(*Print[" =========== CASE lambda_1 neq 0 "];*)
+	(*
+	texHeadPrint[" thus, "];
+		solvhamjac=Solve[hamjac==0,fi'[x[0]]][[1,1]]//FS//EA;	
+		dsolvhamjac=Integrate[solvhamjac[[2]],x[0]]//FS;
+		prolog = SB[\[Phi], 0];
+		texListPrint[dsolvhamjac, ",",WPQ];
+	
+	SS=dsolvhamjac + Sum[la[i]x[i],{i,3}];
+		prolog="S";
+		texListPrint[SS, ".",WPQ];
+	*)	
+	texHeadPrint["Massive test particles traectores"];
+		moteq=Table[Solve[D[SS,la[k]]-si[k]==0,x[k]][[1,1]]/.Rule->Equal,{k,3}];
+		texListPrint[moteq,WPQ];
+		
+	texHeadPrint[" Eikonal "];
+		eik=SS/.MM->0/.la->ka(*/.ka[1]->1*);
+		prolog = \[CapitalPsi];
+		texListPrint[eik,WPQ];
+	
+	texHeadPrint[" Light traectories "];
+		eikon=Table[Solve[moteq[[k]]/.MM->0/.la->ka/.si[it_]->ga[it]/.ka[1]->1,x[k]][[1,1]]/.Rule->Equal,{k,3}];
+		texListPrint[eikon,{WPQ}];
+		
+	runEikonal=1;
+	
+			(*ATTENTION["ro = 0"];*)
+					
+	(*		Clear[ro];ro=l[1]=l[2]=l[3]=0;Clear[La];La=0;*)
+			
+
+
+	noTex=1;Print[" Eikonal eq. for S"]; 
+		RadTraectoryA=eikon/.x->xS//FS;
+		noTex=1;texListPrint[RadTraectoryA,FS];	
+	
+	noTex=1;Print[" It`s solution relative gammas"];
+		s1=Solve[RadTraectoryA,ga/@{1,2,3}][[1]]//FS;
+		noTex=1;texListPrint[s1,EA];	
+
+	noTex=1;Print[" Subst. it to Eeq for D"];
+		RadTraectoryB=(eikon/.x->xD/.s1//FS)~Collect~ka[_];
+		noTex=1;texListPrint[RadTraectoryB];	
+	
+	noTex=1;Print[" It`s solution relative k-s"];
+		s2=Solve[{RadTraectoryB[[2]],RadTraectoryB[[3]]},ka/@{2,3}][[1]]//EA//FS;
+		texListPrint[s2];
+	(*
+	If[Denominator[s2[[1,2]]]==Denominator[s2[[1,2]]],
+	texHeadPrint["Retarding correspondence of light signal"];
+		eqqF=(xD[1]-xS[1])Denominator[s2[[1,2]]]+(RadTraectoryB[[1,1]]-RadTraectoryB[[1,2]]/.xD[1]->0/.xS[1]->0/.ka[2]->
+			Numerator[s2[[1,2]]]/.ka[3]->Numerator[s2[[2,2]]]);
+		noTex=1;texListPrint[eqqF," = 0"],
+	Print["Polundra!"]];
+
+	OF[" \\section{Delay correspondence in privileged CS}"]>>>texoutput.tex;
+		FoF[Delt[it_], SB[Del, it]];
+		simDel = {Log[xD[0]] -> ololo, xD[it_] -> xS[it] + Delt[it]};
+		e1 = eqqF /. simDel /. ololo -> Log[xD[0]] // FS;
+		s1 = Solve[e1 == 0, Delt[1]][[1, 1]] // FS;
+		s2 = Collect[s1[[2]], Delt[_], FS];
+		prolog=Delt[1];
+		texListPrint[s2];
+	*)
+]; 
+
+
+EinDustRadWithoutWaves1:=Block[{},
+
+	If[runCalculus1=!=1,Calculus1];
+	runEinDustRadWithoutWaves1=1;
+	
+	Print[];
+	Print[" ================ EinDustRadWithoutWaves1 is working, 21.07.2024 ==============="];
+	
+	Header=" 4-velosity";
+		Name=uD;
+		Type="Vector";
+		Action:=D[SS/.MM->1,x[i]]//FS;
+		prolog:=u[i];
+		newPrintingFunction;
+		
+	Print["Unsimplified Ricci"];
+	standart;
+	R[0,0]=R[0,0]/.sim//FS;
+	
+	FoF[l[it_],SB["l",it]];
+			
+			(* osetrinwishes 02.10.2024 *)
+			mt = moteq /. la[1] -> 1 /. si[_] -> 0;s3 = Solve[{mt[[2]], mt[[3]]}, {la[2], la[3]}][[1]] // FS;
+			
+			Header=" 4-velosity without lambdas";
+				Name=uNoLa;
+				Type="Vector";
+				Action:=uD[i] /. la[1] -> 1 /. s3 // FS; 
+				prolog:=u[i];
+				newPrintingFunction;
+			
+			Header=" Einst. eq-ns with dust, radiation and $\\Lambda$";
+				Name=Ein;
+				Type="SymMatrix";
+				Action:=R[i,j]-RR ng[i,j]/2-eps l[i]l[j]-ro uNoLa[i]uNoLa[j]-La ng[i,j]/.w1//FS;
+				epilog=" = 0";
+				newPrintingFunction;
+	
+	(* blocked 02.10.2024		
+	Header=" Einst. eq-ns with dust, radiation and $\\Lambda$";
+		Name=Ein;
+		Type="SymMatrix";
+		Action:=R[i,j]-RR ng[i,j]/2-eps l[i]l[j]-ro uD[i]uD[j]-La ng[i,j]/.w1//FS;
+		epilog=" = 0";
+		newPrintingFunction;
+	*)
+	texHeadPrint[" Norm condition "];
+		normL=Sum[vg[i,j]l[i]l[j],{i,0,3},{j,0,3}];
+		texListPrint[normL," = 0"];
+	
+	Do[s[i,j]=Solve[Ein[i,j]==0/.l[i]l[j]->z,z][[1,1]]/.z->l[i]l[j];Print[i,j,".    ",s[i,j]],{i,0,3},{j,i,3}];
+	
+	texHeadPrint["Norm condition without wave vector"];
+		normL1=(normL /. s[0, 1] /. s[2, 2] /. s[2, 3] /. s[3, 3] // FS) /. sim // FS//Numerator;
+		texListPrint[normL1," = 0"];
+	
+	texHeadPrint[" Algebraic concordance on equations with indexes 11, 22, 12 "];
+		
+		sov1122 =   Numerator[s[1, 1][[2]]s[2, 2][[2]] - s[1, 2][[2]]^2  // FS] /. sim // FS;
+		texListPrint[sov1122," = 0"];
+	
+	texHeadPrint[" Algebraic concordance on equations with indexes 11, 33, 13 "];
+		sov1133 =   Numerator[s[1, 1][[2]]s[3, 3][[2]] - s[1, 3][[2]]^2 // FS] /. sim // FS;
+		texListPrint[sov1133," = 0"];
+];
+
+(* +++++++++++++++ End OF \lambda_1\neq 0, see 'universe.tex' ++++++++++++++ *)
+
+
+
+			(* ---------------------------------------- *)
+
+
+
+(* +++++++++++++++ 2. calculus for the case \lambda_1 = 0, see 'universe.tex' ++++++++++++++ *)
+
+Calculus2:=Block[{},
+
+	If[runHamJac=!=1,HamJac];
+	runCalculus=1;
+	
+	OF[" \\section{Case $\\lambda_1 = 0$}"]>>>texoutput.tex;
+	OF[" $\\lambda_1=0$ leeds to $\lambda_2=0$. So,"]>>>texoutput.tex;
+	Print[" Integration of HJE is made by hand"];
+		
+	SS=fi[x[0]]+ep Log[x[3]];
+		prolog="S";
+		texListPrint[SS, ".",WPQ];
+	
+]; 
+
+
+EinDustRadWithoutWaves2:=Block[{},
+
+	If[runCalculus2=!=1,Calculus2];
+	runEinDustRadWithoutWaves2=1;
+	
+	Print[];
+	Print[" ================ EinDustRadWithoutWaves2 is working, 21.07.2024 ==============="];
+	
+	Header=" 4-velosity";
+		Name=uD;
+		Type="Vector";
+		Action:=D[SS,x[i]]//FS;
+		prolog:=u[i];
+		newPrintingFunction;
+		
+	standart;
+	
+	Clear[La];La=3;l[1]=l[2]=0;
+	
+	Header=" Einst. eq-ns with dust, radiation and $\\Lambda$";
+		Name=Ein;
+		Type="SymMatrix";
+		Action:=R[i,j]-RR ng[i,j]/2-eps l[i]l[j]-ro uD[i]uD[j]-La ng[i,j]/.w1//FS;
+		epilog=" = 0";
+		newPrintingFunction;
+	
+	texHeadPrint[" Norm condition "];
+		normL=Sum[vg[i,j]l[i]l[j],{i,0,3},{j,0,3}];
+		texListPrint[normL," = 0"];
+	
+	Do[s[i,j]=Solve[Ein[i,j]==0/.l[i]l[j]->z,z][[1,1]]/.z->l[i]l[j];Print[i,j,".    ",s[i,j]],{i,0,3},{j,i,3}];
+	
+	texHeadPrint[" Algebraic concordance on equations with indexes 11, 22, 12 "];
+		sl = Solve[(normL /. s[0, 1] /. s[2, 2] /. s[3, 3] // FS) == 0, La][[1, 1]];
+		sov1122 =   Numerator[s[1, 1][[2]]s[2, 2][[2]] - s[1, 2][[2]]^2 /. sl // FS] /. w1 // FS;
+		texListPrint[sov1122," = 0"];
+];
+
+(* +++++++++++++++ End OF \lambda_1 = 0, see 'universe.tex' ++++++++++++++ *)
+
+DelaySynchronCS2:=Block[{},		(* especially for 'model2nu0', but may be usefull *)
+
+	Print[];
+	Print[" ================ DelaySynchronCS2 is working, 25.09.2024 ==============="];
+	
+	If[runCalculus1=!=1,Calculus1];
+	If[runSyncMetric=!=1,SyncMetric];
+	runDelaySynchronCS2=1;
+		
+	texHeadPrint[" Relation btw S & D in Synch. CS "];
+	trS = TransToSync[[i+1]]~Table~{i, 0, 3} /. x -> xS /. y -> yS;						(* 30.10.2024 *)
+	trD = TransToSync[[i+1]]~Table~{i, 0, 3} /. x -> xD /. y -> yD;
+	eqqS = s2-Delt[1] /. trS /. trD // FS;
+	Print[eqqS];	
+	eqqSF=eqqS/.Delt[it_]->xD[it]-xS[it]/.trS/.trD//FS;
+	Print[" Full Form "];
+	texListPrint[eqqSF," = 0"];
+
+];
+
+(* ======================= ACTIONS =========================*)
+
+
+
+
+(*	zz = {Log[y[0]y[1]] -> (al^2 + be nu - L)/al^2/nu,     al^4 -> A + be^2nu^2 - al^2ga^2nu^2};*)
+
+
+(* ======================= TERMINATION =========================*)
+OF["\\end{document}"]>>>texoutput.tex;
+Close["texoutput.tex"];
+Close["mathoutput"];
+
+EmitSound[{Play[Sin[700*t+25*t*Sin[350*t]],{t,0,1}]}]; (* бу-га-га! *)
+
+(*Print["OS Version: ",$System];*)
+Print["Data file:    ",dataFileName];
+Print["Current file:    ",$Input];
+Print["Total time:    ",Date[]-dadate];
+Print["Current Memory Usage:    ",SetPrecision[MemoryInUse[]/1048576, 4], " M"]
+Print["Maximum Memory Usage:    ",SetPrecision[MaxMemoryUsed[]/1048576, 4], " M"]
+
+
+(*Run["curl -sS -F eins_maxw31=@Sub/1_math.html https://a-notes:dga16dga@neocities.org/api/upload"];*)
+
+
+

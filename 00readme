@@ -1,0 +1,431 @@
+SetDirectory["Z:\\home\\a\\Work"]; 
+
+(* for large home comp! syncronizing by GIT *)
+
+<< model1;<<eins_maxw32;
+
+
+<<30general_diff;<<eins_maxw31;
+
+
+
+
+30				- test metric
+30general_diff	- more general metric
+
+eins_maxw		- main calculus file
+eins_maxw1		- experimantal calculus file
+eins_maxw2		- experimantal formatiing printing file, 9.03.2024
+eins_maxw32		- most general file, spring of 2024 -  18.09.2024
+eins_maxw33		- for 'model2' especially, more short, than '32', beginned 18.09.2024
+----------------------------------------------
+	new in '33'
+----------------------------------------------
+1. 19.09.2024 is fixed old badness with setting values to grecletter, but it needed in testing:
+	now reason for removing is to be not a 'Symbol'
+	
+
+texoutput		- a hope for otput into LaTeX
+==================================================================================================
+
+	NEEDED TO BE FIXED
+	
+
+8. 'SetOptions' for '>>>'
+
+7. stupid form of eq-ns: 'lhs == rhs'
+
+6. recent 'Beauty' generates 'stupid brackets' in TeXForm (not on screen). 
+
+	- think about different 'w'-s for TeX & for screen.
+
+5. sign '\' used for string wrapping in TeXForm must be removed! it breaks denominators of fractions!
+
+4. improove bug in 'sim' at 31.01.2024: applaing for only positive powers  is needed.
+
+	- fixed (16.02.2024).
+	
+3. replace context 'beauty' to data file, var. 'preW'. & in individual context of blocks!
+
+2. replace 'gpq' & 'antigpq' to data file.
+
+	- fixed (26.01.2024).
+
+1.	J[i]			-	in syncr. CS;
+	J[i]@@var		-	in priv. CS.
+	
+	- fixed (16.02.2024).
+
+
+==================================================================================================
+
+	BLOG
+	
+19.06.2024
+------------
+Strange beheviaour of 'SequenceForm' as a argument of 'texListPrint'. Full 'SequenceForm' works correct, but short 'SeqF' - not. Why?
+It works with 'newPrintingFunction' and 'FoF' correct!
+
+
+17.06.2024
+------------
+1.
+Don`t name var-s formatted symols, like 'psi'! It drives to writing formats & makeboxes into 'mathoutput'.
+
+2.
+UpValue - a value of single variable of single function, exclusive for THIS variable and THIS function! This function may be undefined completelly or defined other way.
+
+We can use it for 'epsilon': ep^2 ^= 1.
+
+
+11.06.2024
+------------
+
+This:
+
+	f[x_] := Block[{}, Clear[x]
+	
+does not work!  'f[a]' will rty to clear not var. 'a', but a VALUE of var. 'a'!
+
+Correct code:
+
+SetAttributes[f, HoldAll]; f[x_] := Block[{}, SetAttributes[Clear, HoldAll]; Clear[x];     ClearAttributes[Clear, HoldAll]]
+
+
+
+08.06.2024
+------------
+
+Function 'BB' (form the word "Buckup"), first experience of reusage of calculated expressions was created.
+
+SetAttributes[BB, HoldFirst];
+BB[xx_,yy__]:=Block[{},SetAttributes[Print, HoldFirst];If[!ValueQ[xx],Print[xx," was calculated first once"];xx=yy,Print[xx,"  already exists"]];ClearAttributes[Print, HoldFirst]];
+
+Infix form exists, but it demands stupid bracets, like this:
+
+	sqrtddet~BB~((Sqrt[-ddet]//FS)/.sim);
+
+
+
+04.06.2024
+------------
+
+We collect information for an automatisation of daily actions. May be usefull:
+
+Directory[]
+
+Run["dir>gg"];!!gg
+
+RunThrough["ver", 0]
+
+Names["Global`*"]  or Information["Global`*"]
+
+
+29.05.2024
+------------
+The ARXIV was beginned. At the bottom!!!
+
+21.05.2024
+------------
+
+Small badness in derivatives formatting was improved: up & low indexes work differently. Now all correct.
+
+
+09.04.2024
+------------
+
+Yes! We have killed 'w'! Now exists 'Format' only, even for derivatives!
+
+The coffin of the 'w':
+
+	(*
+	w={
+	(*xt:Derivative[__][(yt: Alternatives @@ subscribed  ) @__]@__ :> SB[yt, ssf[xt] <> stf[xt]],
+	xt:Derivative[__][(yt: Alternatives @@ superscribed) @__]@__ :> SPB[yt, stf[xt], ssf[xt] ],*)
+	xt:Derivative[__][yt_/;AtomQ[yt]]@_List :> SB[yt,stf[xt] ],											(* 13.03.2024 ??? *)
+	
+	Derivative[nn___][(it:Alternatives@@subscribed)][x[jt_]]->Derivative[nn][SB[it,jt]], (* dont mix! *)
+	(it:Alternatives@@subscribed)[x[jt_]]->SB[it,jt], 
+	(it:Alternatives@@grecletter)@jt_Integer->SB[it,jt]
+	};
+	w=DeleteCases[w,jt_Integer->it_];	(* modern "POLUNDRA"  *)
+	w=DeleteCases[w,jt_Rational->it_];	(* modern "POLUNDRA"  *)
+	*)
+
+Also we have find 'FoF' function for 'Format[x]' & 'Format[x,TeXForm]'
+
+	FoF[xx_, yy_] := Block[{}, If[!ValueQ[xx],Format[xx] := yy; Format[xx, TeXForm] := yy]];
+
+
+08.04.2024
+------------
+
+Radical breaking of great tradition in the 'BEAUTY': the 'w' controls now on derivatives ONLY.
+
+Other rules are the 'wpq'.
+
+
+30.03.2024
+------------
+
+2.
+Add 'MatrixQ' to 'texMatrixPrint' for simultaineous working with lists & matrices. 2 functions: 'texListPrint' & 'texMatrixPrint' is the ZLO.
+
+1.
+"Hold" problem:
+	SetAttributes[h, HoldAll];
+	SetAttributes[g, HoldAll];
+	g[x_] := Print[h[x]];
+	a=1;
+	g[a]
+is working in FrontEnd, it givs 'h[a]'
+
+Still one construction:
+
+	f[x_] := Block[{}, SetAttributes[Print, HoldAll]; Print[x]; ClearAttributes[Print, HoldAll]; Print[x];];
+
+
+
+
+23.03.2024
+------------
+
+Improove that:
+
+MaxwEqForFreeFallingSource;
+
+StatChargeRadToPrivCSBackTransform;
+
+!!!!!!!!!!!!!!!!!!!!
+
+19.03.2024
+------------
+
+After 'Format' introdiction "source" of expr. m.b. seen with the help of 'InputForm'.
+
+Great refactoring of whole code is cointinuing: 'w' is removed from 'texPrint'.
+This action demands addition 'w' to all cases of 'texPrint' usage, but may be 'w' can be remooved from them in future.
+
+A new file 'eins_maxw31'.
+
+
+14.03.2024
+------------
+
+Strange output:
+
+	'Print[exp]'	- font=Courier	(OS Win);
+	'exp//TF'		- font="font for TF";
+	'Print[exp//TF]' - font=Courier	again;
+
+
+
+
+13.03.2024
+------------
+1. New file: 'eins_maxw2'
+
+
+The goal of this file is transition from rules 'w' to the fuction 'Format'
+
+2. 'Sum[it__[k]jt__[k], {k, 3}] -> DF[RowBox[{SB[it, "k"], SPS[jt, "k"]}]]' 		(* an experimental form, preventing following algebraic operations *)
+
+3. 'xt:Derivative[__][yt_/;AtomQ[yt]]@_List :> SB[yt,stf[xt] ]'						- new is 'List'
+
+
+12.03.2024
+------------
+A new feature 'Format', an example: 
+	
+	Format[G[it_, jt_]] := SPS["G", SF["````", it, jt]]
+
+- You can examinate it for, say, 'G[2,3]'.
+
+TeXForm must be defined addittionally:
+
+	Format[G[it_, jt_], TeXForm] := SPS["G", SF["````", it, jt]]
+
+You can use such definition:
+
+	Format[ta] = Format[ta, TeXForm] = \[Tau]
+	
+In notebooks following istruction is working:
+
+	Format[fi, {StandardForm, TeXForm}] := \[Phi]
+
+You can rewrite all 'w' rules to such functions.
+
+New file: 'eins_maxw2'
+
+
+06.03.2024
+------------
+'aaa // ""' - very strange result.
+
+
+05.03.2024
+------------
+New printing function 'texListPritn' prints nice output in general part of 'TwoArbitraryPoints', but breaks output in simplification part (((
+Course: 'FS' after use 'w' in the function.
+Moreover, 'TF' conflicts with 'TeXForm'.
+
+
+01.03.2024
+------------
+May be, the operation 'f[a]^=qqq' can give us some profit. It is needed in our attention.
+
+
+29.02.2024
+------------
+
+We can save optional data in main file & use it by 'If[dataFileName=="(needed_data_file_name)", ...]', with 'dataFileName=$Input;' in current datafile.
+
+
+20.02.2024
+------------
+
+Yes, 'Collect' can collect some degrees of var-s, but with some own stupid jokes:
+
+'eqq=eqq~Collect~(xD[_]-xS[_])'	-	please!
+'eqq=eqq~Collect~(xS[_]-xD[_])'	-	fuck.
+
+A little profit givs the 'TraditionalForm', but with some own stupidity too.
+
+This was used in 'TwoArbitraryPoints' at moment.
+
+
+
+17.02.2024
+------------
+
+New file: 'eins_maxw1'
+
+Here 'TwoArbitraryPoints' is rewrited with x_S & x_D only. No essential changes. 'w' was changed correspondingly.
+	
+
+16.02.2024
+------------
+
+A 'loop' between first & last results is discovered. It must be consiedered.
+
+
+15.02.2024
+------------
+
+don`t forget:     GPQ=y[0]/y[1]			!!!
+
+
+
+09.02.2024
+------------
+
+1) massive replacement the 'f[__]' syntax to the 'f@__' syntax;
+
+2) idea: to use strings '"c", "G", "F"' instead simple symbols 'c, G, F'. It can prevent substitution simbols of its numeric values. We had use such syntax already in some cases.
+
+3) very strange beheviaour of new studied command 'Remove["Global`*"]'
+
+		Clear["`*"]; Remove["Global`*"]; 
+		dontclear=1;
+		
+	- is working, but 
+	
+		Clear["`*"]; Remove["Global`*"]; dontclear=1;
+		
+	- is NOT working.
+
+08.02.2024
+------------
+Yes, form at 05.02.2024 was wrong! Working form is:
+
+stf[xt_]:= Block[{a,i,k,st}, st=","; a=List@@xt[[0,0]]; Do[st=st<>ToString[xt[[i,1]]],{i,Length[a]},{k,a[[i]]}]; st];							(* short form from 08.02.2024 *)
+ssf[xt_]:=StringJoin @@ ToString /@ xt[[0,1]];
+
+ww1 := {xt:Derivative[__][(yt:Alternatives@@subscribed)@__][__] :> SB[yt, ssf[xt] <> stf[xt] ],
+		xt:Derivative[__][(yt:Alternatives@@superscribed)@__][__] :> SPB[yt, stf[xt], ssf[xt] ],
+		xt:Derivative[__][yt_/;AtomQ[yt]][__] :> SB[yt,stf[xt] ]};
+		
+It is even more complicated, than old form '3 strings', but it works with upper indexes correctly.
+
+Most short form 'ww1 := xt : Derivative[__][_@__][__] :> SB[xt[[0, 1]], SF[",``", xt // stf]];' drows 'stupid brackets' on the screen, but generates correct TeXForm.
+
+We will not drop it to the bin.
+
+	"5. a great possibility is in a form 'ww1 := xt : Derivative[__][_@__][__] :> SB[xt[[0, 1]], SF[",``", xt // stf]];'  - without 'indeks'.
+
+	- it is not needed in 'rul7'!
+	
+	- but it drows stupid brackets (((((("
+	
+
+
+05.02.2024
+------------
+I can't believe to my eyes, but VERY SHORT 'beauty' rule is workig! (* If the cooker is not lie *)
+
+I must save od forms of rules:
+
+	rul7[xt_]:=Block[{a}, a=xt[[0,1]];  indeks=""; If[MatchQ[a,_@__], Do[indeks=indeks<>ToString[a[[i]]],{i, Length[a]}]; a=a//Head]; a];			(* short form from 02.02.2024 *)
+	stf[xt_]:= Block[{a,i,k,st}, st=""; a=List@@xt[[0,0]]; Do[st=st<>ToString[xt[[i,1]]],{i,Length[a]},{k,a[[i]]}]; st];							(* short form from 02.02.2024 *)
+	(*ww1 := xt:Derivative[__][(yt_/;AtomQ[yt])|_@__][__] :> SB[xt//rul7,SF["``,``",indeks, xt//stf]];												(* short form from 02.02.2024 *)*)
+	*ww1 := xt:Derivative[__][(yt_/;AtomQ[yt])|_@__][__] :> DisplayForm[SubscriptBox[xt[[0, 1]], SF[",``", xt // stf]]];							(* short form from 03.02.2024 *)
+	
+but now we have this:
+
+	stf[xt_]:= Block[{a,i,k,st}, st=""; a=List@@xt[[0,0]]; Do[st=st<>ToString[xt[[i,1]]],{i,Length[a]},{k,a[[i]]}]; st];							(* short form from 02.02.2024 *)
+	ww1 := xt:Derivative[__][__][__] :> DisplayForm[SubscriptBox[xt[[0, 1]], SF[",``", xt // stf]]];												(* short form from 05.02.2024 *)
+
+the 'stupid brackets' problem is still alive; but 'supid brackets' appear in a case of a upper indexes of function only.
+
+	--- ATTENTION!!! --- this form breaks the TexForm !!! ---
+
+
+02.02.2024
+------------
+little simplifications in 'ww1' is obtained: 
+
+(*
+1) the old form is 'ww1 := xt:Derivative[__][(yt_/;AtomQ[yt])|_@__][__] :> SB[xt//rul7,SF["``,``",indeks, xt//stf]]'
+
+	- expr. '(yt_/;AtomQ[yt])' is not needed;
+*)
+
+2) 'a=(xt//Head)[[1]]' was replaced by 'a=xt[[0,1]]'.	Note, that 'exp[[0]]' is the "Head' of the 'exp'.
+
+31.01.2024
+------------
+a simplification in 'sim' is done: a general form for all powers: 2,3,4,... at 31.01.2024 it has some danger in a case of negative powers: -2 -> -4, ... ,-n -> -n-2.
+
+	- fixed at 01.10.2024. see please: G[2,3][it_]^(jt_ /; Positive[jt] && IntegerQ[jt])->(-GG[it]+G[2,2][it]G[3,3][it]) G[2,3][it]^(jt-2)
+
+some contradiction btw 'sim' & 'simOptional' is discovered!
+
+	- all in the '03general_diff'
+
+
+25.01.2024
+------------
+great simplification of 'beauty' rules: general rule for  derivs from 1-variable dep. functions! see please: {Derivative[1][it___][jt___] -> it[jt]'}
+
+	- a question: why we can't use '{it___'[jt___] -> it[jt]}' ??
+
+
+
+
+
+
+
+==================================================================================================
+
+	BLOG
+	
+30.10.2024
+------------
+1.  a[i]~Table~{i, 3}								is working! just for fun.
+2.  FoF[ #[it_], SB[#, it]]  & /@ grecletter		minus 1 pair of [].   /@ instead Map
+3.  Do[Print[a], {3}]								from the Book
+
+29.05.2024
+------------
+
+(*yoyo[it_] := StyleForm[it, FontFamily -> "Dejavu Sans Mono"]//TF;	*)		(* for some Linuxes *)

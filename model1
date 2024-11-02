@@ -1,0 +1,86 @@
+
+(* !!! for 'eins_maxw32' only! *)
+
+
+Clear["`*"]; a=2 2; Remove["Global`*"]; 
+dontclear=1;
+Unprotect[C];Clear[C];
+dataFileName=$Input;	(* it saves data file name, 29.02.2024 *)
+
+var=x/@{0,1,2,3};	(* an alternative form at 31.01.2024 *)
+
+ddelt=1;
+
+(* 30 *) VG={{0,1,0,0},{1,0,0,0},{0,0,x[0]^(-2 mu),al x[0]^(-mu-nu)},{0,0,al x[0]^(-mu-nu),x[0]^(-2 nu)}}/ddelt;
+
+
+
+(* ======================= SIM-S =========================== *)
+
+
+Print[" ATTENTION !!! G = G22 G33 - G23^2  -  it is not the det of the metric ! "];
+
+sim={
+	
+	al^2->1-si^2
+	
+	
+	
+};
+
+sim=ass=simOptForGij={};
+
+(*sim={mu -> (1 - be)/2, nu -> (1 - ga)/2};*)
+
+
+sim2derivs={
+
+	g[2,2][xx_] g[3,3]'[xx_]->2 g[2,3][xx]g[2,3]'[xx]-g[2,2]'[xx]g[3,3][xx]+g'[xx]/g[xx]^2,
+	g[2,2][xx_]^2 g[3,3]'[xx_]->(2 g[2,3][xx]g[2,3]'[xx]-g[2,2]'[xx]g[3,3][xx]+g'[xx]/g[xx]^2)g[2,2][xx],
+	g[2,2][xx_]^2 g[3,3]'[xx_]^2->(2 g[2,3][xx]g[2,3]'[xx]-g[2,2]'[xx]g[3,3][xx]+g'[xx]/g[xx]^2)^2,
+	
+	g[2,2][xx_]g[3,3]''[xx_]->2 g[2,3]'[xx]^2+2g[2,3][xx]g[2,3]''[xx]-g[2,2]''[xx]g[3,3][xx]-2g[2,2]'[xx]g[3,3]'[xx]-2g'[xx]^2/g[xx]^3+g''[xx]/g[xx]^2
+	
+};
+
+
+
+antisim={g[xx_]->1/(g[2,3][xx]^2+g[2,2][xx] g[3,3][xx])};
+
+SyncMetricWrittenByHands:=Block[{},
+	
+	runSyncMetricWrittenByHands=1;
+	
+
+	CC=-((be+ga)^2-4al^2be ga)/(-1+al^2)/(be+ga)^2;
+	YY=y[0]y[1];
+	be=1-2mu;
+	ga=1-2nu;
+	
+	ns[0,0]=1;ns[0,1]=ns[0,2]=ns[0,3]=0;
+	ns[1,1]=(-1+CC(ga^2 YY^be y[2]^2+2 al be ga YY^((be+ga)/2) y[2] y[3]+be^2 YY^ga y[3]^2)/be^2/ga^2/YY)y[0]^2/y[1]^2;
+	ns[1,2]=-CC YY^(be/2-2)y[0]^3(ga YY^(be/2)y[2]+al be YY^(ga/2)y[3])/be^2/ga;
+	ns[1,3]=-CC YY^(ga/2-2)y[0]^3(al ga YY^(be/2)y[2]+be YY^(ga/2)y[3])/be/ga^2;
+	ns[2,2]=CC YY^(be-1)y[0]^2/be^2;
+	ns[2,3]=al CC YY^(be/2+ga/2-1)y[0]^2/be/ga;
+	ns[3,3]=CC YY^(ga-1)y[0]^2/ga^2;
+	
+	vs[0,0]=1;vs[0,1]=vs[0,2]=vs[0,3]=0;
+	vs[1,1]=-y[1]^2/y[0]^2;
+	vs[1,2]=-y[1]y[2]/y[0]^2;
+	vs[1,3]=-y[1]y[3]/y[0]^2;
+	vs[2,2]=-(be^2 YY^(1-be)/(-1+al^2)/CC+y[2]^2)/y[0]^2;
+	vs[2,3]=(al be ga YY^(1-be/2-ga/2)/(-1+al^2)/CC-y[2]y[3])/y[0]^2;
+	vs[3,3]=-(ga^2 YY^(1-ga)/(-1+al^2)/CC+y[3]^2)/y[0]^2;
+	
+	
+	Clear[be,ga,CC,YY];
+
+];
+
+
+
+
+
+
+
