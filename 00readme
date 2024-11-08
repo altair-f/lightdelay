@@ -1,4 +1,4 @@
-SetDirectory["Z:\\home\\a\\Work"]; 
+SetDirectory["Z:\\home\\a\\Work\\lightdelay"];
 
 (* for large home comp! syncronizing by GIT *)
 
@@ -41,6 +41,8 @@ texoutput		- a hope for otput into LaTeX
 
 5. sign '\' used for string wrapping in TeXForm must be removed! it breaks denominators of fractions!
 
+	- fixed by infinity strings.
+
 4. improove bug in 'sim' at 31.01.2024: applaing for only positive powers  is needed.
 
 	- fixed (16.02.2024).
@@ -63,24 +65,39 @@ texoutput		- a hope for otput into LaTeX
 	
 19.06.2024
 ------------
+Solved
 Strange beheviaour of 'SequenceForm' as a argument of 'texListPrint'. Full 'SequenceForm' works correct, but short 'SeqF' - not. Why?
 It works with 'newPrintingFunction' and 'FoF' correct!
 
+Solution (14.11.2024): argument 'epiplya___SequenceForm' demands exact form of type jr variable. For allowing aliases like 'SeqF', You must write
+
+	epiplya___SequenceForm|epiplya___SeqF
+	
+- both forms exactly!
 
 17.06.2024
 ------------
 1.
-Don`t name var-s formatted symols, like 'psi'! It drives to writing formats & makeboxes into 'mathoutput'.
+Solved
+Don`t name var-s formatted symbols, like 'psi'! It drives to writing formats & makeboxes into 'mathoutput'.
 
+Solution (19.09.2024): exclude defined symbols from formatted area:
+
+	If[!ValueQ[grecletter],grecletter={al,be,ga,de,ka,ep,la,mu,nu,ro,si,k,A,B}~Cases~_Symbol];
+	
+	SetAttributes[FoF, HoldFirst];																										(* 19.09.2024 *)
+	FoF[xx_, yy_] := Block[{}, If[!ValueQ[xx],Format[xx] := yy; Format[xx, TeXForm] := yy,	Print["--- warning!   ",yy," = ",xx]]];
+	
 2.
-UpValue - a value of single variable of single function, exclusive for THIS variable and THIS function! This function may be undefined completelly or defined other way.
+UpValue - a value of single variable (value?) of single function, exclusive for THIS variable (value?) and THIS function! This function may be undefined completelly or defined other way.
 
 We can use it for 'epsilon': ep^2 ^= 1.
+
+Comment: no. right is: ep/:ep^2=1. what is '^=' I don`t know at 14.11.2024 still.
 
 
 11.06.2024
 ------------
-
 This:
 
 	f[x_] := Block[{}, Clear[x]
@@ -89,13 +106,12 @@ does not work!  'f[a]' will rty to clear not var. 'a', but a VALUE of var. 'a'!
 
 Correct code:
 
-SetAttributes[f, HoldAll]; f[x_] := Block[{}, SetAttributes[Clear, HoldAll]; Clear[x];     ClearAttributes[Clear, HoldAll]]
+	SetAttributes[f, HoldAll]; f[x_] := Block[{}, SetAttributes[Clear, HoldAll]; Clear[x];     ClearAttributes[Clear, HoldAll]]
 
 
 
 08.06.2024
 ------------
-
 Function 'BB' (form the word "Buckup"), first experience of reusage of calculated expressions was created.
 
 SetAttributes[BB, HoldFirst];
@@ -109,7 +125,6 @@ Infix form exists, but it demands stupid bracets, like this:
 
 04.06.2024
 ------------
-
 We collect information for an automatisation of daily actions. May be usefull:
 
 Directory[]
@@ -125,15 +140,15 @@ Names["Global`*"]  or Information["Global`*"]
 ------------
 The ARXIV was beginned. At the bottom!!!
 
+Comment: removed already.
+
 21.05.2024
 ------------
-
 Small badness in derivatives formatting was improved: up & low indexes work differently. Now all correct.
 
 
 09.04.2024
 ------------
-
 Yes! We have killed 'w'! Now exists 'Format' only, even for derivatives!
 
 The coffin of the 'w':
@@ -159,7 +174,6 @@ Also we have find 'FoF' function for 'Format[x]' & 'Format[x,TeXForm]'
 
 08.04.2024
 ------------
-
 Radical breaking of great tradition in the 'BEAUTY': the 'w' controls now on derivatives ONLY.
 
 Other rules are the 'wpq'.
@@ -167,8 +181,8 @@ Other rules are the 'wpq'.
 
 30.03.2024
 ------------
-
 2.
+Solved.
 Add 'MatrixQ' to 'texMatrixPrint' for simultaineous working with lists & matrices. 2 functions: 'texListPrint' & 'texMatrixPrint' is the ZLO.
 
 1.
@@ -186,11 +200,9 @@ Still one construction:
 
 
 
-
 23.03.2024
 ------------
-
-Improove that:
+Improve that:
 
 MaxwEqForFreeFallingSource;
 
@@ -203,7 +215,7 @@ StatChargeRadToPrivCSBackTransform;
 
 After 'Format' introdiction "source" of expr. m.b. seen with the help of 'InputForm'.
 
-Great refactoring of whole code is cointinuing: 'w' is removed from 'texPrint'.
+Great refactoring of whole code is continuing: 'w' is removed from 'texPrint'.
 This action demands addition 'w' to all cases of 'texPrint' usage, but may be 'w' can be remooved from them in future.
 
 A new file 'eins_maxw31'.
@@ -217,8 +229,6 @@ Strange output:
 	'Print[exp]'	- font=Courier	(OS Win);
 	'exp//TF'		- font="font for TF";
 	'Print[exp//TF]' - font=Courier	again;
-
-
 
 
 13.03.2024
@@ -277,13 +287,11 @@ May be, the operation 'f[a]^=qqq' can give us some profit. It is needed in our a
 
 29.02.2024
 ------------
-
 We can save optional data in main file & use it by 'If[dataFileName=="(needed_data_file_name)", ...]', with 'dataFileName=$Input;' in current datafile.
 
 
 20.02.2024
 ------------
-
 Yes, 'Collect' can collect some degrees of var-s, but with some own stupid jokes:
 
 'eqq=eqq~Collect~(xD[_]-xS[_])'	-	please!
@@ -297,7 +305,6 @@ This was used in 'TwoArbitraryPoints' at moment.
 
 17.02.2024
 ------------
-
 New file: 'eins_maxw1'
 
 Here 'TwoArbitraryPoints' is rewrited with x_S & x_D only. No essential changes. 'w' was changed correspondingly.
@@ -305,13 +312,11 @@ Here 'TwoArbitraryPoints' is rewrited with x_S & x_D only. No essential changes.
 
 16.02.2024
 ------------
-
 A 'loop' between first & last results is discovered. It must be consiedered.
 
 
 15.02.2024
 ------------
-
 don`t forget:     GPQ=y[0]/y[1]			!!!
 
 
@@ -418,6 +423,25 @@ great simplification of 'beauty' rules: general rule for  derivs from 1-variable
 ==================================================================================================
 
 	BLOG
+
+14.11.2024
+------------
+1. 'newPrintingFunction' can`t work with Scalar type! (((((
+2. 'epiplya___String|epiplya___SequenceForm|epiplya___SeqF' can`t be shortify! ((((
+
+13.11.2024
+------------
+1. Printing of 'header' was replaced from the 'texHeadPrint' to the 'texListPrint' for preventing of repeated printing.
+2. 'texMatrixPrint' was removed because it is unused and unuseful.
+
+
+12.11.2024
+------------
+1. removed 'varlist', 'varPrint', old versoin of 'BB'.
+2. we try to move to new version of 'BB'.
+3. WARNING! very strange beheviaour of '>>' is discovered! in all files the 'newPrintingFunction' contains a string: 'Definition[Name]>>mathoutput', but it don`t rewrite the 'mathoutput' but append strings into it!
+4. '!!file' does not work from the kernel, in the FrontEnd only. Kernel command is: Print[Import["file", "Text"]];
+5. SetOptions[OpenWrite["mathoutput"],PageWidth->Infinity]; was replaced by the SetOptions[OpenAppend["mathoutput"],PageWidth->Infinity] because OpenWrite clears the file.
 	
 30.10.2024
 ------------

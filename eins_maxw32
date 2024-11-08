@@ -1,35 +1,39 @@
 (* !!! for 'models' only! *)
-(* from 02.11.2024 this file is under conterole of Git *)
+(* from 02.11.2024 this file is under controle of Git *)
+
+If[!ValueQ[dataFileName],Print["This program demands some datafile before it, stop"];Abort[]];
+If[!MemberQ[FileNames[], "mathoutput"],
+	Print["No mathoutput exists"];Definition[dataFileName]>>>mathoutput,
+	(*backupFile=OpenRead["mathoutput"];firstLine = Read[backupFile, String];Close[backupFile];(*Print[" first line  = ",firstLine];*)*)
+	<<mathoutput;
+	];
+
+firstWord[string_String] := StringTake[string, StringPosition[string, " ="][[1, 1]] - 1];			(* 26.11.2024 *)
+varlist=firstWord /@ Select[ReadList["mathoutput",String],StringPosition[#, "="] =!= {} &];
+
+(* test *) (*Print[" G[0,0,0] exists?    - ",ValueQ[G[0,0,0]],"    & it is ",G[0,0,0]];*)
+
+(* test *) (*Print[" content of varlist = ",varlist];*)
+
+SetAttributes[BB, HoldAll];
+BB[var_,def_]:=Block[{dat1,dat2},																	(* 17.11.2024 *)
+	dat1=Date[];
+	If[noBBprn=!=1,Print["prepared: ",ValueQ[var]]];
+	If[!ValueQ[var],var=def];
+	dat2=Date[]-dat1;
+	If[dat2=!={0,0,0,0,0,0},Print["time: ",dat2]]
+];
 
 
 
 SetOptions[$FrontEnd, Background -> GrayLevel[0.2], FontColor -> GrayLevel[1], FontSize -> 18];
 (*SetOptions[$FrontEnd, Background -> GrayLevel[1], FontColor -> GrayLevel[0], FontSize -> 18];*)
 SetOptions[OpenWrite["texoutput.tex"],PageWidth->Infinity];
-SetOptions[OpenWrite["mathoutput"],PageWidth->Infinity];
+SetOptions[OpenAppend["mathoutput"],PageWidth->Infinity];											(* 12.11.2024 *)
 
-(* <code> *) dadate=Date[];
-(*
-OF[]>>varlist;
+dadate=Date[];
 
-If[MemberQ[FileNames[], "mathoutputBackUp"],DeleteFile["mathoutputBackUp"]];						(* 08.06.2024 *)
-oldVarList=Names["Global`*"];
-If[MemberQ[FileNames[], "mathoutput"],<<mathoutput;CopyFile["mathoutput","mathoutputBackUp"]];
-newVarList=Complement[Names["Global`*"],oldVarList];
-Print[" ============= New technology testing ============= "];
-Print[newVarList];							
-
-SetAttributes[BB, HoldAll];
-BB[xx_,yy__]:=Block[{},Print[];
-	
-	If[!ValueQ[xx]||noBackup===1,																	(* 10.06.2024 *)
-		Print[Unevaluated[xx]," was calculated first once"];xx=yy,
-		Print[Unevaluated[xx],"  already exists"]
-	];
-];
-*)
-
-BB=Set;
+(*BB=Set;*)
 
 (* this program demands some metric tensor before it *)
 
@@ -72,12 +76,11 @@ subscribed=DeleteCases[subscribed,jt_Integer];	(* a piece of "POLUNDRA" from jun
 stf[xt_]:= Block[{a,i,k,st}, st=","; a=List @@ xt[[0,0]]; Do[st=st <> ToS @ xt[[i,1]],{i,Length[a]},{k,a[[i]]}]; st];				(* 08.02.2024 *)
 ssf[xt_]:=StringJoin @@ ToS /@ xt[[0,1]];
 
-SetAttributes[FoF, HoldFirst];																									(* 19.09.2024 *)
+SetAttributes[FoF, HoldFirst];																										(* 19.09.2024 *)
 FoF[xx_, yy_] := Block[{}, If[!ValueQ[xx],Format[xx] := yy; Format[xx, TeXForm] := yy,	Print["--- warning!   ",yy," = ",xx]]];
 
 Format[ppp:Derivative[__][(yt_/;subscribed~MemberQ~yt)@__]@__] := SB[yt, ssf[ppp] <> stf[ppp]];										(* 09.04.2024 *)
 Format[ppp:Derivative[__][(yt_/;subscribed~MemberQ~yt)@__]@__, TeXForm] := SB[yt, ssf[ppp] <> stf[ppp]];
-(*FoF[ppp:(Derivative[__][(yt_/;subscribed~MemberQ~yt)@__]@__),  SB[yt, ssf[ppp] <> stf[ppp]]   ];*)
 Format[ppp:Derivative[__][(yt_/;MemberQ[superscribed,yt])[__]][__]] := SPB[yt, " " <> stf[ppp], ssf[ppp]];
 Format[ppp:Derivative[__][(yt_/;MemberQ[superscribed,yt])[__]][__], TeXForm] := SPB[yt, " " <> stf[ppp], ssf[ppp]];
 
@@ -153,7 +156,7 @@ FoF[ fi[x[it_]], SB[fi,it]];												(* <- we loose *)
 
 FoF[ # @__,         #]              & /@ {g,GG};							(* 23.05.2024 *)
 FoF[ #[it__]@__,    SPS[#, it]]     & /@ {Aup,J,Jx,b};
-FoF[ #[it_,jt_]@__, SPS[#, Sfitjt]] & /@ {Fup,g,G};
+FoF[ #[it_,jt_]@__, SPS[#, Sfitjt]] & /@ {Fup,g};
 FoF[ #[it_,jt_],    SPS[#, Sfitjt]] & /@ {Fup};
 FoF[ #[it__],       SPS[#, it]]     & /@ {u};
 FoF[ #[it__],       SB [#, it]]     & /@ {cc,ud,Jdown};
@@ -214,7 +217,7 @@ w1={ep^2->1,1/ep->ep};   w1=DeleteCases[w1,jt_Integer->it_];  (* short epsylon-o
 texPreamble:=Block[{},
 
 	OF["\\documentclass{report}				"]>>texoutput.tex;
-	OF["%\\usepackage[russian]{babel}       	"]>>>texoutput.tex;
+	OF["\\usepackage[russian]{babel}       	"]>>>texoutput.tex;
 	OF["\\usepackage[utf8]{inputenc}       	"]>>>texoutput.tex;
 	OF["\\usepackage{amssymb}              	"]>>>texoutput.tex;
 	OF["%\\usepackage{amsmath}             	"]>>>texoutput.tex;
@@ -235,24 +238,21 @@ texPreamble:=Block[{},
 
 	
 	OF["\begin{document}"]>>>texoutput.tex;
-	
+(*	
 	OF["(* \n
 		Definitions: \n\n
 		'ddet' - a determinant of the metric tensor,\n
 		'SS' - an action,\n
 		'hamjac' - left part of Hamilton-Jacoby Eq, where phi[0] is unknown,\n
 		'dsolvhamjac' - the solution of Hamilton-Jacoby Eq relative phi[0],\n
-	*)"]>>mathoutput;
+	*)"]>>>mathoutput;
 	OF[""]>>>mathoutput;
-
+*)
 ];
 
 texPreamble;
 
 (*============================= OUTPUT FUNCTIONS =================================================*)
-
-SetAttributes[varPrint, HoldAll];
-varPrint[xx__]:=Block[{}, Print["variable: ",Unevaluated[xx]]; Unevaluated[xx]>>>varlist;];				(* 16.06.2024, a slow success  *)
 
 (* You can define a 'equationLabel' before this funct. *)
 
@@ -275,37 +275,31 @@ texHeadPrint[header_]:=Block[{},
 	Print[];	
 	Print["-----",SlashRemover[header],"------"];
 	header//TeXForm>>>texoutput.tex;
-	OF[""]>>>mathoutput;
-	OF[SF["(* ---- `` ----*)",header]]>>>mathoutput;
+	texHeaderForListPrint=header;											(* 13.11.2024, exp.feature for preventing double printing of headers to the 'mathoutput' *)
 ];
 
 (* !!! for lists beginned at 1 *)	(* syntax example: 'expr, " = 0", FS' - 2-th must be a string, 3-th - action like FS, EA, TF etc. *)
 
 SetAttributes[texListPrint, HoldAll];
-texListPrint[list_,epiplya___String|epiplya___SequenceForm,actioplya___Symbol|actioplya___List]:=Block[{},varPrint[list];
-	texMatrixPrint[list,epiplya,actioplya]];
-
-(* !!! for cycling 'Do' usage! without 'varPrint' !!! *)
-
-
-
-SetAttributes[texMatrixPrint, HoldFirst];
-texMatrixPrint[list_,epiplya___String|epiplya___SequenceForm,actioplya___Symbol|actioplya___List]:=Block[{},
-
-	If[ValueQ[prolog],prolog=SequenceForm[prolog, " = "],prolog=""];
+texListPrint[list_,epiplya___String|epiplya___SequenceForm|epiplya___SeqF,actioplya___Symbol|actioplya___List]:=Block[{},								(* 14.11.2024 *)
+	Print["variable: ",Unevaluated[list]];
+	If[ValueQ[prolog],prolog=SeqF[prolog, " = "],prolog=""];
 	If[epiplya[[0]]===0,epilog="",epilog=epiplya];
 	Which[actioplya[[0]]===0,action=Identity,  actioplya[[0]]===Symbol,action=actioplya,  ListQ[actioplya],action=Last[ComposeList[actioplya, #]]& ];
 	If[list[[0]]===List,
 		Do[Print[i,".   ",prolog,list[[i]]//action,epilog];             texPrint[prolog,list[[i]]//action,epilog],{i,Length[list]}],
 		Print[SlashRemover[prolog],list//action,SlashRemover[epilog]];  texPrint[prolog,list//action,epilog]
 	];
-	If[noMat=!=1,Definition[list]>>>mathoutput];
-	Clear[noTex,noMat,prolog,epilog,action];
+	If[noMat=!=1&&(!MemberQ[varlist,Unevaluated[list]//ToString]),
+		If[ValueQ[texHeaderForListPrint],OF[""]>>>mathoutput;OF[SF["(* ---- `` ----*)",texHeaderForListPrint]]>>>mathoutput];							(* 13.11.2024 *)
+		Definition[list]>>>mathoutput];
+	Clear[noTex,noMat,prolog,epilog,action,texHeaderForListPrint];
 ];
 
 
 innerPrint:=Block[{formula},																(* 30.05.2024 *)
-	PostAction; 
+	PostAction;
+	noBBprn=1;
 	If[Type=="Vector",formula=Name[i],formula=Name[i,j]];
 	If[{nonZero,formula}=!={1,0},
 		Print[prolog, formula//bebeauty, epilog]; texPrint[texprolog, formula//bebeauty, epilog]]
@@ -314,23 +308,30 @@ innerPrint:=Block[{formula},																(* 30.05.2024 *)
 
 newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
 	If[noTex=!=1,texHeadPrint[Header],Print[Header]];
-	Print["this variable is: ",Name];
+	Print["this variable is: ",Name,",       is in varlist?  - ",MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True]];
 	
-	If[ValueQ[prolog],prolog=SequenceForm[prolog, " = "],prolog=""];						(* empty 'prolog' can be replaced by the 'Enumerate'? *)
+	If[ValueQ[prolog],prolog=SeqF[prolog, " = "],prolog=""];						(* empty 'prolog' can be replaced by the 'Enumerate'? *)
 	
-	If[ValueQ[texprolog],texprolog=SequenceForm[texprolog, " = "],texprolog=prolog];										(* 31.05.2024, may be dangerous! *)
-	If[Enumerate==1,If[Type=="Vector",prolog=SequenceForm[i,".   ",prolog],prolog=SequenceForm[i,j,".   ",prolog]]];		(* 03.06.2024, risk *)
+	If[ValueQ[texprolog],texprolog=SeqF[texprolog, " = "],texprolog=prolog];										(* 31.05.2024, may be dangerous! *)
+	If[Enumerate==1,If[Type=="Vector",prolog=SeqF[i,".   ",prolog],prolog=SeqF[i,j,".   ",prolog]]];				(* 03.06.2024, risk *)
 	If[!ValueQ[epilog],epilog=""];
 	Which[!ValueQ[Beauty],bebeauty=Identity,  Beauty[[0]]===Symbol,bebeauty=Beauty,   ListQ[Beauty],bebeauty=Last[ComposeList[Beauty, #]]& ];
-
-	Which[
-		Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
-		Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
-		Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];	Do[Name[j,i]=Name[i,j],{i,0,3},{j,i+1,3}],
-		Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+	If[!MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True],												(* 27.11.2024 *)
+		Which[
+			Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
+			Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
+			Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
+			Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+		];
+		ClearAttributes[Definition,HoldAll]; Definition[Name]>>>mathoutput; SetAttributes[Definition,HoldAll],
+		Which[
+			Type=="Vector",     Do[ innerPrint,{i,0,3}],
+			Type=="FullMatrix", Do[ innerPrint,{i,0,3},{j,0,3}],
+			Type=="SymMatrix",  Do[ innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
+			Type=="ASymMatrix", Do[ innerPrint,{i,0,3},{j,i+1,3}];		Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+		];
 	];
-	ClearAttributes[Definition,HoldAll]; Definition[Name]>>mathoutput; SetAttributes[Definition,HoldAll];
-	Clear[Header,Name,Type,Action,PostAction,prolog,texprolog,epilog,Beauty,noTex,nonZero,Enumerate];
+	Clear[Header,Name,Type,Action,PostAction,prolog,texprolog,epilog,Beauty,noTex,nonZero,Enumerate,noBBprn];
 ];
 
 
@@ -348,12 +349,13 @@ If[ValueQ[ddelt] && ddelt=!=1,
 	VG/.sim//MatrixForm//TeXForm>>>texoutput.tex;
 	OF["\\right) \\ee"]>>>texoutput.tex;
 	];
-vdet=(Det[VG]//FS); Print["Det|",SPS["g","ij"],"| = ",vdet," ",SF["\[Congruent]"]," ",vdet/.sim," < 0"];
+vdet~BB~(Det[VG]//FS); 
+	prolog=SeqF["Det|",SPS["g","ij"],"|"];
+	texListPrint[vdet,SeqF[(*" ","\[Congruent]"," ",vdet/.sim,*)" < 0"]];						(* latex error: $ *)
 
-Print["test3"];
 
 BB[ddet, 1/vdet/.sim];										(* first usage 'BB' 08.06.2024 *)
-	prolog=SequenceForm["\\det ", SB["g", "ij"]];
+	prolog=SeqF["\\det ", SB["g", "ij"]];
 	texListPrint[ddet," = g < 0"];
 
 sqrtddet~BB~((FS[Sqrt[-ddet],si>0])/.sim);					(* infix form of 'BB' *) 
@@ -361,7 +363,7 @@ sqrtddet~BB~((FS[Sqrt[-ddet],si>0])/.sim);					(* infix form of 'BB' *)
 	noTex=1;
 	texListPrint[sqrtddet]; 
 
-NG~BB~((Inverse[VG]//FS)/.sim); Print[SB["g","ij"]," = ",NG]; (*nition[NG]>>mathoutput;*)
+NG~BB~((Inverse[VG]//FS)/.sim); Print[SB["g","ij"]," = ",NG];
 
 Do[ng[i,j]=NG[[i+1,j+1]]; vg[i,j]=VG[[i+1,j+1]],{i,0,3},{j,0,3}];
 
@@ -373,8 +375,9 @@ dssquare=Sum[ng[i,j]dddx[i]dddx[j],{i,0,3},{j,0,3}]~Collect~g[_];
 
 standart:=Block[{},
 
+	If[!ValueQ[G[0,0,0]],																							(* 18.11.2024 *)
 	Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS;
-		(*If[G[i,j,k]=!=0,Print[SPB[\[CapitalGamma],SF["````",i,j],SF["  ``",k]],"  =  ",G[i,j,k]/.w];];*)
+		(*If[G[i,j,k]=!=0,Print[SPB[\[CapitalGamma],SF["````",i,j],SF["  ``",k]],"  =  ",G[i,j,k]];];*)
 		G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
 	
 	Do[R[i,k]=Sum[D[G[i,k,j],x[j]]-D[G[i,j,j],x[k]]+Sum[G[i,k,j]*G[j,m,m],{m,0,3}]-Sum[G[i,j,m]*G[k,m,j],{m,0,3}],{j,0,3}]//EA//Simplify;
@@ -383,137 +386,156 @@ standart:=Block[{},
 	Do[R[k,i]=R[i,k],{i,0,2},{k,i+1,3}];
 	
 	RR=Sum[vg[k,m]R[k,m],{k,0,3},{m,0,3}]//Expand//Simplify;
+	
+	Definition[G]>>>mathoutput;
+	Definition[R]>>>mathoutput;
+	Definition[RR]>>>mathoutput;
+	];
 ];
 
+standart;
+
+(* we must keep it here, after 'standart' for preventing of writing format to 'mathoutput' *)
+FoF[ #[it_,jt_]@__, SPS[#, Sfitjt]] & /@ {G};																		(* 18.11.2024 *) 
 
 (*============================= MAIN =================================================*)
+If[!ValueQ[sim2derivs],sim2derivs={}];											(* must be improved! *)
+If[!ValueQ[sim2derivsAlt],sim2derivsAlt={}];
 
 
-
-
-(* ------- maxw 1 pair test ---------------- *)
-(* !!! not in general form *)
+(* ------- maxw 1 pair test, I don`t know, for what. ---------------- *)
 
 maxw1t:=Block[{},
-	Print["-------- maxwell 1 test -------------"];
-	
-	Do[maxw1[i,k,l]=D[F[i,k]@@var,x[l]]+D[F[l,i]@@var,x[k]]+D[F[k,l]@@var,x[i]]//FS;
-	If[maxw1[i,k,l]=!=0,
-		Print[i,k,l,"    ",maxw1[i,k,l]];
-		"\bb">>>texoutput.tex;
-		maxw1[i,k,l]//TeXForm>>>texoutput.tex;
-		"=0\ee">>>texoutput.tex;];
-	,{i,0,1},{k,1,2},{l,2,3}];
-	
+	texHeadPrint[ "Maxwell 1 test"];
+		maxw1=Table[D[F[i,k]@@var,x[l]]+D[F[l,i]@@var,x[k]]+D[F[k,l]@@var,x[i]]//FS,{i,0,1},{k,i+1,2},{l,k+1,3}]//Flatten;
+		noMat=1; 
+		texListPrint[maxw1," = 0"]
 ];
 
-(* 1. F - an arbitrary antisymmetric tensor, low indexes! *)
 
-Max2[Fup_,JJJ_,SqrtMetricDet_,varia_,maxw_]:=Block[{},	Clear[maxw];
-		maxw=Table[Numerator[  Sum[D[SqrtMetricDet Fup[i,j],varia[j]],{j,0,3}]+SqrtMetricDet JJJ[i]//FS ]/.sim//FS,	{i,0,3}];
-		texListPrint[maxw," = 0"]
-	];
-
-
-MaxwEqPrivilegedCS:=Block[{},
+MaxwEqPrivilegedCS:=Block[{},												(* improved 16.11.2024 *)
 
 	runMaxwEqPrivilegedCS=1;
 	
-	Clear[maxwF, maxwA, maxwFup, maxwAup];
+	Print[];
+	Print[" ================ MaxwEqPrivilegedCS is working, 17.11.2024 ==============="];
+	
+	(*Clear[maxwF, maxwA, maxwFup, maxwAup];*)
+	
+	(* definition of 2 arbitrary (!!!) anitsym. tensors: up- and low-indexed. 'F[i,j]' is not an electromagnetic just now! *)
 	
 	Do[F/:F[i,i]@@var=0,{i,0,3}];
 	Do[F/:F[j,i]@@var=-F[i,j]@@var,{i,0,3},{j,i+1,3}];
 	Do[Fup/:Fup[i,i]@@var=0,{i,0,3}];
 	Do[Fup/:Fup[j,i]@@var=-Fup[i,j]@@var,{i,0,3},{j,i+1,3}];
 
-	Do[FupF[i,j]=Sum[F[l,m]@@var vg[i,l] vg[m,j],{l,0,3},{m,0,3}],  {i,0,3},{j,0,3}];
-	Do[FupA[i,j]=Sum[(D[A[m]@@var,x[l]]-D[A[l]@@var,x[m]]) vg[i,l] vg[m,j],{l,0,3},{m,0,3}]/.sim//FS,  {i,0,3},{j,0,3}];
-	Do[FupFup[i,j]=Fup[i,j]@@var,  {i,0,3},{j,0,3}];
-	
+	(* -- main function -- *)
+
+	SetAttributes[Max2,HoldAll];
 	Max2[FupLocal_,maxw_]:=Block[{},
-		maxw=Table[(Numerator[  Sum[D[sqrtddet FupLocal[i,j],x[j]],{j,0,3}]+sqrtddet 4pi/cc J[i]@@var//EA//FS]//EA)/.sim//FS,	{i,0,3}];
-		maxw[[1]]=maxw[[1]]/sqrtddet;
-		texListPrint[maxw," = 0"]
+		maxw~BB~Table[(Numerator[  Sum[D[sqrtddet FupLocal[i,j],x[j]],{j,0,3}]+sqrtddet 4pi/cc J[i]@@var//EA//FS]//EA)/.sim//FS,	{i,0,3}];
+		maxw=maxw /. sqrtddet*xx__ -> xx;
+		texListPrint[maxw," = 0"];
 	];
 	
-	(* An example of usage: *)
+	(* Examples of usage: *)
 	
-	If[noFdonwJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with F in Priv. CS "];					Max2[FupF,maxwF]];
+	(* 	1. upper F via a convolution of lower F(x) with g^{ij} *)
+	
+	If[noFdonwJupMaxw=!=1,	
+		Do[FupF[i,j]=Sum[F[l,m]@@var vg[i,l] vg[m,j],{l,0,3},{m,0,3}],  {i,0,3},{j,0,3}];
+		texHeadPrint[" 2 pair of Maxwell eq-ns with F in Priv. CS "];
+		Max2[FupF,maxwF]
+	];
 
-	If[noFupJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant F in Priv. CS "];		Max2[FupFup,maxwFup]];
+	(* 2. upper F directly as upper F(x) *)
+	
+	If[noFupJupMaxw=!=1,
+		Do[FupFup[i,j]=Fup[i,j]@@var,  {i,0,3},{j,0,3}];
+		texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant F in Priv. CS "];
+		Max2[FupFup,maxwFup]
+	];
 		
-	If[noAdonwJupMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with A in Priv. CS "];					Max2[FupA,maxwA]];
+	(* 3. upper F via a convolution of derivs. lower A(x) with g^{ij} *)
+		
+	If[noAdonwJupMaxw=!=1,
+		Do[FupA[i,j]=Sum[(D[A[m]@@var,x[l]]-D[A[l]@@var,x[m]]) vg[i,l] vg[m,j],{l,0,3},{m,0,3}]/.sim//FS,  {i,0,3},{j,0,3}];
+		texHeadPrint[" 2 pair of Maxwell eq-ns with A in Priv. CS "];
+		Max2[FupA,maxwA]
+	];
 	
-	If[noAupJupMaxw=!=1,
+	(* 4. upper F via upper A(x) *)
+	
+	If[noAupJupMaxw=!=1||noFdonwJdownMaxw=!=1||noAdonwJdownMaxw=!=1,
+		G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
+		G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
+	];			
+	
+	If[noAupJupMaxw=!=1,		
 		texHeadPrint[" 2 pair of Maxwell eq-ns with contravariant A in Priv. CS "];
-		Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS; G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
-			G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
-			G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
-	
 		Do[FupAup[i,i]=0,{i,0,3}];	
 		Do[FupAup[i,j]=Sum[vg[i,l](D[Aup[j]@@var,x[l]]+Sum[G[k,l,j]Aup[k]@@var,{k,0,3}]),{l,0,3}]-Sum[vg[j,l](D[Aup[i]@@var,x[l]]+Sum[G[k,l,i]Aup[k]@@var,{k,0,3}]),{l,0,3}]//EA;
 		FupAup[j,i]=-FupAup[i,j],{i,0,3},{j,i+1,3}];
 		Max2[FupAup,maxwAup]
 	];
+	
+	If[noFdonwJdownMaxw=!=1||noAdonwJdownMaxw=!=1,
+		texHeadPrint[" The same with covar. Current\\\\ "];
+		Do[FdownF/:FdownF[i,i]@@var=0,{i,0,3}];
+		Do[FdownF/:FdownF[j,i]@@var=-FdownF[i,j]@@var,{i,0,3},{j,i+1,3}];
+	
+		SetAttributes[Max2covJ,HoldAll];
+		Max2covJ[Fdown_,maxw_]:=Block[{},
+			maxw~BB~Table[Numerator[  Sum[vg[k,l](D[Fdown[i,k],x[l]]-Sum[G[i,l,m]Fdown[m,k],{m,0,3}]-Sum[G[k,l,m]Fdown[i,m],{m,0,3}]),{k,0,3},{l,0,3}] + 4pi/cc Jdown[i]//FS] /.sim//FS,	{i,0,3}];
+			maxw[[1]]=maxw[[1]]/.sim2derivs//EA;
+			texListPrint[maxw," = 0"]
+		];
+	];
+	
+	If[noFdownJdownMaxw=!=1,
+		texHeadPrint[" 2 pair of Maxwell eq-ns with F and covar. J in Priv. CS "];
+		Do[FdownFF[i,j]=FdownF[i,j]@@var,{i,0,3},{j,0,3}];
+		
+		Max2covJ[FdownFF,maxwFdown] 
+	];
+	
+	If[noAdonwJdownMaxw=!=1,
+		texHeadPrint[" 2 pair of Maxwell eq-ns with A and covar. J  in Priv. CS "];
+		Do[FdownA[i,j]=D[A[j]@@var,x[i]]-D[A[i]@@var,x[j]],{i,0,3},{j,0,3}];
+		Max2covJ[FdownA,maxwAdown]  
+	];
+	
 ];
 
-MaxwEqPrivilegedCSAdd:=Block[{},
+LorentzGauge:=Block[{},
 
-
-	If[runMaxwEqPrivilegedCS=!=1,MaxwEqPrivilegedCS];
-	runMaxwEqPrivilegedCSAdd=1;
-
-	(* ---------------------- ADD --------------------- *)
+	runLorentzGauge=1;
 	
-	
+	Print[];
+	Print[" ================ LorentzGauge is working, 17.11.2024 ==============="];
 	
 	OF[" General covariant form of II Maxwell eq. with a Dalembertian "]>>texoutput.tex;
 		OF["\\bb F^{ik}{}_{;k}=\\nabla^i\\nabla_k A^k+R^i_k A^k-\\Box A^i=-\\frac{4\\pi}{c}J^i\\ee"]>>texoutput.tex;
-	
-	
-	Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS; G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
+		
+	If[runMaxwEqPrivilegedCS=!=1,
 		G[0,2,2]=((G[0,2,2]//EA)/.sim//FS)/.sim2derivs//FS;
 		G[0,3,3]=((G[0,3,3]//EA)/.sim//FS)/.sim2derivsAlt//FS;
-
-	texHeadPrint[" The same with covar. Current\\\\ "];
-	
-	Do[FdownF/:FdownF[i,i]@@var=0,{i,0,3}];
-	Do[FdownF/:FdownF[j,i]@@var=-FdownF[i,j]@@var,{i,0,3},{j,i+1,3}];
-	Do[FdownFF[i,j]=FdownF[i,j]@@var,{i,0,3},{j,0,3}];
-	Do[FdownA[i,j]=D[A[j]@@var,x[i]]-D[A[i]@@var,x[j]],{i,0,3},{j,0,3}];
-	
-	(* stupid form! *)
-	
-	Max2covJ[Fdown_,maxw_]:=Block[{},	
-		maxw=Table[Numerator[  Sum[vg[k,l](D[Fdown[i,k],x[l]]-Sum[G[i,l,m]Fdown[m,k],{m,0,3}]-Sum[G[k,l,m]Fdown[i,m],{m,0,3}]),{k,0,3},{l,0,3}] + 4pi/cc Jdown[i]//FS] /.sim//FS,	{i,0,3}];
-		maxw[[1]]=maxw[[1]]/.sim2derivs//EA;
-		texListPrint[maxw," = 0"]
 	];
 	
-	Clear[maxwFdown, maxwAdown];
-	
-	If[noFdonwJdownMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with F and covar. J in Priv. CS "];		Max2covJ[FdownFF,maxwFdown] ];
-	
-	If[noAdonwJdownMaxw=!=1,	texHeadPrint[" 2 pair of Maxwell eq-ns with A and covar. J  in Priv. CS "];		Max2covJ[FdownA,maxwAdown]  ];
-
 	texHeadPrint[" Lorentz gauge for covariant A "];
-
-		lorGauge=Sum[vg[i,j](D[A[i]@@var,x[j]]-Sum[G[i,j,k]A[k]@@var,{k,0,3}]),{i,0,3},{j,0,3}];
-		lorGauge=(lorGauge // EA) /. sim2derivs /. sim // EA;
+		lorGauge~BB~(Sum[vg[i,j](D[A[i]@@var,x[j]]-Sum[G[i,j,k]A[k]@@var,{k,0,3}]),{i,0,3},{j,0,3}]// EA) /. sim2derivs /. sim // EA;
 		texListPrint[lorGauge," = 0"];
 		
 	texHeadPrint[" Lorentz gauge for contravariant A "];
-		lorGaugeUp=Sum[D[Aup[i]@@var,x[i]],{i,0,3}]+Sum[Sum[G[i,k,i],{i,0,3}] Aup[k]@@var,{k,0,3}];
-		lorGaugeUp=(lorGaugeUp // EA) /. sim2derivs /. sim // EA;
+		lorGaugeUp~BB~(Sum[D[Aup[i]@@var,x[i]],{i,0,3}]+Sum[Sum[G[i,k,i],{i,0,3}] Aup[k]@@var,{k,0,3}] // EA) /. sim2derivs /. sim // EA;
 		texListPrint[lorGaugeUp," = 0"];
 		
-	texHeadPrint[" Ricci tensor "];
-		Do[R[i,k]=Sum[D[G[i,k,j],x[j]]-D[G[i,j,j],x[k]]+Sum[G[i,k,j]*G[j,m,m],{m,0,3}]-Sum[G[i,j,m]*G[k,m,j],{m,0,3}],{j,0,3}]//EA//Simplify;
-		If[R[i,k]=!=0, prolog=SB[R,SF["````",i,k]]; noMat=1; R[i,k]=(((R[i,k]//EA)/.sim2derivs//EA)/.sim//EA)/.sim2derivs//EA; texListPrint[R[i,k]] ];
-		,{i,0,3},{k,i,3}];	Do[R[k,i]=R[i,k],{i,0,2},{k,i+1,3}];
+	texHeadPrint[" Ricci tensor "];		(* some non-stadard simplifications *)
+		Do[If[R[i,k]=!=0, prolog=SB[R,SF["````",i,k]]; noMat=1; R[i,k]=(((R[i,k]//EA)/.sim2derivs//EA)/.sim//EA)/.sim2derivs//EA; 
+		texListPrint[R[i,k]] ];,{i,0,3},{k,i,3}];
+		Do[R[k,i]=R[i,k],{i,0,2},{k,i+1,3}];
 	
-	
-		OF["\\newcommand{\EmptyDownTriangle}{\\nabla}"]>>>texoutput.tex;
+	OF["\\newcommand{\EmptyDownTriangle}{\\nabla}"]>>>texoutput.tex;
 	
 	Header="nabla contravar. A";
 		Name=nabAup;
@@ -526,7 +548,7 @@ MaxwEqPrivilegedCSAdd:=Block[{},
 			If[{i,j}=={3,3},nabAup[3,3]=nabAup[3,3]/. sim2derivsAlt//EA];];
 		noTex=1;
 		newPrintingFunction;
-		
+
 	Header=" Dalembertian of contravariant A ";
 		Name=contravarBox;
 		Type="Vector";
@@ -542,15 +564,14 @@ MaxwEqPrivilegedCSAdd:=Block[{},
 		Name=maxwDalAup;
 		Type="Vector";
 		Action:=Sum[vg[i,j] R[j,k] Aup[k]@@var,{k,0,3},{j,0,3}]-contravarBox[i]//EA;
-		epilog:=SequenceForm[" = ",4 pi/cc J[i]];
+		epilog:=SeqF[" = ",4 pi/cc J[i]];
 		newPrintingFunction;
 
-		
 	Header="nabla covar. A";
 		Name=nabA;
 		Type="FullMatrix";
-		prolog:=SequenceForm[SB[\[EmptyDownTriangle],i],"\[ThinSpace]",SB["A",j]];
-		texprolog:=SequenceForm[SB[\[EmptyDownTriangle],i],SB["A",j]];
+		prolog:=SeqF[SB[\[EmptyDownTriangle],i],"\[ThinSpace]",SB["A",j]];
+		texprolog:=SeqF[SB[\[EmptyDownTriangle],i],SB["A",j]];
 		Action:=EA[D[A[j]@@var,x[i]]+Sum[G[i,j,k]A[k]@@var,{k,0,3}]]/.sim//EA;
 		PostAction:=Block[{},
 			If[{i,j}=={2,0},nabA[2,0]=nabA[2,0]/. sim2derivs//EA];
@@ -570,7 +591,7 @@ MaxwEqPrivilegedCSAdd:=Block[{},
 		Name=maxwDalA;
 		Type="Vector";
 		Action:=Sum[vg[k,j] R[j,i] A[k]@@var,{k,0,3},{j,0,3}]-covarBox[i]//EA;
-		epilog:=SequenceForm[" = ",4 pi/cc Jdown[i]];
+		epilog:=SeqF[" = ",4 pi/cc Jdown[i]];
 		newPrintingFunction;
 
 ];
@@ -578,8 +599,10 @@ MaxwEqPrivilegedCSAdd:=Block[{},
 
 EinstenEqPrivilegedCS:=Block[{},																			(* improved 03.06.2024 *)
 
-	standart;	Do[R[i,k]=(((R[i,k]/.sim2derivs//EA)/.sim//EA)/.sim//EA)/.sim2derivs//FS,{i,0,3},{k,0,3}];
+	runEinstenEqPrivilegedCS=1;
 	
+	Print[];
+	Print[" ================ EinstenEqPrivilegedCS is working, 03.06.2024 ==============="];
 	
 	Do[F[i,i]=0,{i,0,3}];
 	Do[F[j,i]=-F[i,j],{i,0,3},{j,i+1,3}];
@@ -1810,7 +1833,7 @@ RicciSync:=Block[{},							(* 03.06.2024, verified by stupid direct calculation 
 
 OsetrinWishes130624:=Block[{},
 
-	If[runMaxwEqPrivilegedCSAdd=!=1,MaxwEqPrivilegedCSAdd];
+	If[runLorentzGauge=!=1,LorentzGauge];
 	If[runTwoArbitraryPoints=!=1,TwoArbitraryPoints];
 	runOsetrinWishes130624=1;
 	
@@ -2186,10 +2209,9 @@ DelaySynchronCS2:=Block[{},		(* especially for 'model2nu0', but may be usefull *
 
 (* ======================= ACTIONS =========================*)
 
-
-
-
-(*	zz = {Log[y[0]y[1]] -> (al^2 + be nu - L)/al^2/nu,     al^4 -> A + be^2nu^2 - al^2ga^2nu^2};*)
+maxw1t;
+LorentzGauge;
+	
 
 
 (* ======================= TERMINATION =========================*)
@@ -2197,17 +2219,11 @@ OF["\\end{document}"]>>>texoutput.tex;
 Close["texoutput.tex"];
 Close["mathoutput"];
 
-EmitSound[{Play[Sin[700*t+25*t*Sin[350*t]],{t,0,1}]}]; (* бу-га-га! *)
+EmitSound[{Play[Sin[700*t+25*t*Sin[350*t]],{t,0,0.5}]}]; (* бу-га-га! *)
 
 (*Print["OS Version: ",$System];*)
-Print["Data file:    ",dataFileName];
+Print["Data file:    ",dataFileName];dataFileName=.;
 Print["Current file:    ",$Input];
 Print["Total time:    ",Date[]-dadate];
 Print["Current Memory Usage:    ",SetPrecision[MemoryInUse[]/1048576, 4], " M"]
 Print["Maximum Memory Usage:    ",SetPrecision[MaxMemoryUsed[]/1048576, 4], " M"]
-
-
-(*Run["curl -sS -F eins_maxw31=@Sub/1_math.html https://a-notes:dga16dga@neocities.org/api/upload"];*)
-
-
-
