@@ -1,4 +1,4 @@
-SetDirectory["Z:\\home\\a\\Work"]; 
+SetDirectory["Z:\\home\\a\\Work\\lightdelay"]; 
 
 (* for large home comp! syncronizing by GIT *)
 
