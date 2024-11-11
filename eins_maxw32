@@ -1,7 +1,29 @@
 (* !!! for 'models' only! *)
-(* from 02.11.2024 this file is under conterole of Git *)
+(* from 02.11.2024 this file is under controle of Git *)
 
+(* 11.11.2024 GPT-solution for repeated usage Set 
+Clear[SmartSet]
+SetAttributes[SmartSet, HoldAll]
 
+SmartSet[symbol_Symbol, expr_, file_String] := Module[{value},
+  (* Проверка, существует ли файл с результатами *)
+  If[FileExistsQ[file],
+    (* Если файл существует, загружаем сохранённое значение *)
+    value = Import[file, "WL"];
+    Print["Значение загружено из файла: ", file];
+    symbol = value,
+    
+    (* Иначе вычисляем значение *)
+    value = expr;
+    symbol = value;
+    (* Сохраняем значение в файл *)
+    Export[file, value, "WL"];
+    Print["Значение вычислено и сохранено в файл: ", file];
+  ];
+]
+
+usage: SmartSet[result, NIntegrate[Exp[-x^2], {x, -10, 10}], "result.wl"]
+*)
 
 SetOptions[$FrontEnd, Background -> GrayLevel[0.2], FontColor -> GrayLevel[1], FontSize -> 18];
 (*SetOptions[$FrontEnd, Background -> GrayLevel[1], FontColor -> GrayLevel[0], FontSize -> 18];*)
