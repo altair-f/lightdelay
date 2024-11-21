@@ -1,6 +1,6 @@
 SetDirectory["Z:\\home\\a\\Work\\lightdelay"]; 
 
-(* for large home comp! syncronizing by GIT *)
+(* third installation of GIT, test commit *)
 
 << model1;<<eins_maxw32;
 
