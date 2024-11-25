@@ -12,9 +12,23 @@ preparedValues=ReadList["mathoutput"]~DeleteCases~Null;
 (*Print[" content of m.o. = ",preparedValues];*)
 
 
-firstWord[string_String] := StringTake[string, StringPosition[string, " "][[1, 1]] - 1];
+
+
+
+
+
+
+
+
+
+
+firstWord[string_String] := StringTake[string, StringPosition[string, " ="][[1, 1]] - 1];			(* 26.11.2024 *)
 varlist=firstWord /@ Select[ReadList["mathoutput",String],StringPosition[#, "="] =!= {} &];
-(*Print[" content of m.o. = ",varlist];*)
+
+(* test *) Print[" G[0,0,0] exists?    - ",ValueQ[G[0,0,0]],"    & it is ",G[0,0,0]];
+
+
+Print[" content of varlist = ",varlist];
 
 SetAttributes[BB, HoldAll];
 BB[var_,def_]:=Block[{dat1,dat2},																	(* 17.11.2024 *)
@@ -525,7 +539,7 @@ LorentzGauge:=Block[{},
 		texListPrint[lorGaugeUp," = 0"];
 		
 	texHeadPrint[" Ricci tensor "];		(* some non-stadard simplifications *)
-		If[R[i,k]=!=0, prolog=SB[R,SF["````",i,k]]; noMat=1; R[i,k]=(((R[i,k]//EA)/.sim2derivs//EA)/.sim//EA)/.sim2derivs//EA; 
+		Do[If[R[i,k]=!=0, prolog=SB[R,SF["````",i,k]]; noMat=1; R[i,k]=(((R[i,k]//EA)/.sim2derivs//EA)/.sim//EA)/.sim2derivs//EA; 
 		texListPrint[R[i,k]] ];,{i,0,3},{k,i,3}];
 		Do[R[k,i]=R[i,k],{i,0,2},{k,i+1,3}];
 	
