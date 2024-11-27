@@ -8,27 +8,12 @@ If[!MemberQ[FileNames[], "mathoutput"],
 	<<mathoutput;
 	];
 
-
-preparedValues=ReadList["mathoutput"]~DeleteCases~Null;
-(*Print[" content of m.o. = ",preparedValues];*)
-
-
-If[!MemberQ[FileNames[], "varlist1"],																	(* for 'newPrintingFunction' *)
-	Print["No varlist1 exists"];Definition[dataFileName]>>>varlist1,										(* 25.11.2024 *)
-	<<varlist1;(*Print["dataFileName from varlist1 = ",dataFileName];*)
-	];
-
-preparedValues=ReadList["varlist1"];
-Print[" content of varlist1 = ",preparedValues];
-
 firstWord[string_String] := StringTake[string, StringPosition[string, " ="][[1, 1]] - 1];			(* 26.11.2024 *)
 varlist=firstWord /@ Select[ReadList["mathoutput",String],StringPosition[#, "="] =!= {} &];
 
-(* test *) Print[" G[0,0,0] exists?    - ",ValueQ[G[0,0,0]],"    & it is ",G[0,0,0]];
+(* test *) (*Print[" G[0,0,0] exists?    - ",ValueQ[G[0,0,0]],"    & it is ",G[0,0,0]];*)
 
-
-
-Print[" content of varlist = ",varlist];
+(* test *) (*Print[" content of varlist = ",varlist];*)
 
 SetAttributes[BB, HoldAll];
 BB[var_,def_]:=Block[{dat1,dat2},																	(* 17.11.2024 *)
@@ -323,7 +308,7 @@ innerPrint:=Block[{formula},																(* 30.05.2024 *)
 
 newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
 	If[noTex=!=1,texHeadPrint[Header],Print[Header]];
-	Print["this variable is: ",Name," is in varlist?  - ",MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True]];
+	Print["this variable is: ",Name](* test *)(*Print[" is in varlist?  - ",MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True]];*)
 	
 	If[ValueQ[prolog],prolog=SeqF[prolog, " = "],prolog=""];						(* empty 'prolog' can be replaced by the 'Enumerate'? *)
 	
@@ -331,14 +316,21 @@ newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
 	If[Enumerate==1,If[Type=="Vector",prolog=SeqF[i,".   ",prolog],prolog=SeqF[i,j,".   ",prolog]]];				(* 03.06.2024, risk *)
 	If[!ValueQ[epilog],epilog=""];
 	Which[!ValueQ[Beauty],bebeauty=Identity,  Beauty[[0]]===Symbol,bebeauty=Beauty,   ListQ[Beauty],bebeauty=Last[ComposeList[Beauty, #]]& ];
-
-	Which[
-		Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
-		Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
-		Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
-		Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+	If[!MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True],												(* 27.11.2024 *)
+		Which[
+			Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
+			Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
+			Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
+			Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+		];
+		ClearAttributes[Definition,HoldAll]; Definition[Name]>>>mathoutput; SetAttributes[Definition,HoldAll],
+		Which[
+			Type=="Vector",     Do[ innerPrint,{i,0,3}],
+			Type=="FullMatrix", Do[ innerPrint,{i,0,3},{j,0,3}],
+			Type=="SymMatrix",  Do[ innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
+			Type=="ASymMatrix", Do[ innerPrint,{i,0,3},{j,i+1,3}];		Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
+		];
 	];
-	ClearAttributes[Definition,HoldAll]; Definition[Name]>>>mathoutput; SetAttributes[Definition,HoldAll];
 	Clear[Header,Name,Type,Action,PostAction,prolog,texprolog,epilog,Beauty,noTex,nonZero,Enumerate,noBBprn];
 ];
 
