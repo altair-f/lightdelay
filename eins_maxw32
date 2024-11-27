@@ -1,39 +1,16 @@
 (* !!! for 'models' only! *)
-(* from 02.11.2024 this file is under controle of Git *)
+(* 27.11.2024, without checking 'mathoutput' for prevening repeated calculations. switch to 'checking' version: $ git checkout no_repeat_calcs *)
 
 If[!ValueQ[dataFileName],Print["This program demands some datafile before it, stop"];Abort[]];
-If[!MemberQ[FileNames[], "mathoutput"],
-	Print["No mathoutput exists"];Definition[dataFileName]>>>mathoutput,
-	(*backupFile=OpenRead["mathoutput"];firstLine = Read[backupFile, String];Close[backupFile];(*Print[" first line  = ",firstLine];*)*)
-	<<mathoutput;
-	];
-
-firstWord[string_String] := StringTake[string, StringPosition[string, " ="][[1, 1]] - 1];			(* 26.11.2024 *)
-varlist=firstWord /@ Select[ReadList["mathoutput",String],StringPosition[#, "="] =!= {} &];
-
-(* test *) (*Print[" G[0,0,0] exists?    - ",ValueQ[G[0,0,0]],"    & it is ",G[0,0,0]];*)
-
-(* test *) (*Print[" content of varlist = ",varlist];*)
-
-SetAttributes[BB, HoldAll];
-BB[var_,def_]:=Block[{dat1,dat2},																	(* 17.11.2024 *)
-	dat1=Date[];
-	If[noBBprn=!=1,Print["prepared: ",ValueQ[var]]];
-	If[!ValueQ[var],var=def];
-	dat2=Date[]-dat1;
-	If[dat2=!={0,0,0,0,0,0},Print["time: ",dat2]]
-];
-
-
 
 SetOptions[$FrontEnd, Background -> GrayLevel[0.2], FontColor -> GrayLevel[1], FontSize -> 18];
 (*SetOptions[$FrontEnd, Background -> GrayLevel[1], FontColor -> GrayLevel[0], FontSize -> 18];*)
 SetOptions[OpenWrite["texoutput.tex"],PageWidth->Infinity];
-SetOptions[OpenAppend["mathoutput"],PageWidth->Infinity];											(* 12.11.2024 *)
+SetOptions[OpenWrite["mathoutput"],PageWidth->Infinity];											(* 12.11.2024 *)
 
 dadate=Date[];
 
-(*BB=Set;*)
+BB=Set;
 
 (* this program demands some metric tensor before it *)
 
@@ -290,7 +267,7 @@ texListPrint[list_,epiplya___String|epiplya___SequenceForm|epiplya___SeqF,actiop
 		Do[Print[i,".   ",prolog,list[[i]]//action,epilog];             texPrint[prolog,list[[i]]//action,epilog],{i,Length[list]}],
 		Print[SlashRemover[prolog],list//action,SlashRemover[epilog]];  texPrint[prolog,list//action,epilog]
 	];
-	If[noMat=!=1&&(!MemberQ[varlist,Unevaluated[list]//ToString]),
+	If[noMat=!=1,
 		If[ValueQ[texHeaderForListPrint],OF[""]>>>mathoutput;OF[SF["(* ---- `` ----*)",texHeaderForListPrint]]>>>mathoutput];							(* 13.11.2024 *)
 		Definition[list]>>>mathoutput];
 	Clear[noTex,noMat,prolog,epilog,action,texHeaderForListPrint];
@@ -308,7 +285,7 @@ innerPrint:=Block[{formula},																(* 30.05.2024 *)
 
 newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
 	If[noTex=!=1,texHeadPrint[Header],Print[Header]];
-	Print["this variable is: ",Name,",       is in varlist?  - ",MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True]];
+	Print["this variable is: ",Name];
 	
 	If[ValueQ[prolog],prolog=SeqF[prolog, " = "],prolog=""];						(* empty 'prolog' can be replaced by the 'Enumerate'? *)
 	
@@ -316,21 +293,13 @@ newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
 	If[Enumerate==1,If[Type=="Vector",prolog=SeqF[i,".   ",prolog],prolog=SeqF[i,j,".   ",prolog]]];				(* 03.06.2024, risk *)
 	If[!ValueQ[epilog],epilog=""];
 	Which[!ValueQ[Beauty],bebeauty=Identity,  Beauty[[0]]===Symbol,bebeauty=Beauty,   ListQ[Beauty],bebeauty=Last[ComposeList[Beauty, #]]& ];
-	If[!MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True],												(* 27.11.2024 *)
-		Which[
-			Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
-			Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
-			Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
-			Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
-		];
-		ClearAttributes[Definition,HoldAll]; Definition[Name]>>>mathoutput; SetAttributes[Definition,HoldAll],
-		Which[
-			Type=="Vector",     Do[ innerPrint,{i,0,3}],
-			Type=="FullMatrix", Do[ innerPrint,{i,0,3},{j,0,3}],
-			Type=="SymMatrix",  Do[ innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
-			Type=="ASymMatrix", Do[ innerPrint,{i,0,3},{j,i+1,3}];		Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
-		];
+	Which[
+		Type=="Vector",     Do[ Name[ i ]=Action; innerPrint,{i,0,3}],
+		Type=="FullMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,0,3}],
+		Type=="SymMatrix",  Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i,3}];		Do[Name[j,i]= Name[i,j],{i,0,3},{j,i+1,3}],
+		Type=="ASymMatrix", Do[ Name[i,j]=Action; innerPrint,{i,0,3},{j,i+1,3}];	Do[Name[j,i]=-Name[i,j],{i,0,3},{j,i+1,3}]; Do[Name[i,i]=0,{i,0,3}]
 	];
+	ClearAttributes[Definition,HoldAll]; Definition[Name]>>>mathoutput; SetAttributes[Definition,HoldAll];
 	Clear[Header,Name,Type,Action,PostAction,prolog,texprolog,epilog,Beauty,noTex,nonZero,Enumerate,noBBprn];
 ];
 
