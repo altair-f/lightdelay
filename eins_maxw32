@@ -308,7 +308,7 @@ innerPrint:=Block[{formula},																(* 30.05.2024 *)
 
 newPrintingFunction := Block[{bebeauty},													(* 17.04.2024 *)
 	If[noTex=!=1,texHeadPrint[Header],Print[Header]];
-	Print["this variable is: ",Name](* test *)(*Print[" is in varlist?  - ",MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True]];*)
+	Print["this variable is: ",Name,",       is in varlist?  - ",MemberQ[StringMatchQ[#1, (Name//ToS)<>"*"] & /@ varlist, True]];
 	
 	If[ValueQ[prolog],prolog=SeqF[prolog, " = "],prolog=""];						(* empty 'prolog' can be replaced by the 'Enumerate'? *)
 	
@@ -540,7 +540,6 @@ LorentzGauge:=Block[{},
 	Header="nabla contravar. A";
 		Name=nabAup;
 		Type="FullMatrix";
-		Type="ASymMatrix";
 		prolog:=SequenceForm[SB[\[EmptyDownTriangle],i],"\[ThinSpace]",SPS["A",j]];
 		texprolog:=SequenceForm[SB[\[EmptyDownTriangle],i],SPS["A",j]];
 		Action:=EA[D[Aup[j]@@var,x[i]]+Sum[G[i,k,j]Aup[k]@@var,{k,0,3}]]/.sim//EA;
@@ -549,7 +548,7 @@ LorentzGauge:=Block[{},
 			If[{i,j}=={3,3},nabAup[3,3]=nabAup[3,3]/. sim2derivsAlt//EA];];
 		noTex=1;
 		newPrintingFunction;
-(*		
+
 	Header=" Dalembertian of contravariant A ";
 		Name=contravarBox;
 		Type="Vector";
@@ -594,7 +593,7 @@ LorentzGauge:=Block[{},
 		Action:=Sum[vg[k,j] R[j,i] A[k]@@var,{k,0,3},{j,0,3}]-covarBox[i]//EA;
 		epilog:=SeqF[" = ",4 pi/cc Jdown[i]];
 		newPrintingFunction;
-*)
+
 ];
 
 
