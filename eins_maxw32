@@ -344,7 +344,6 @@ dssquare=Sum[ng[i,j]dddx[i]dddx[j],{i,0,3},{j,0,3}]~Collect~g[_];
 
 standart:=Block[{},
 
-	If[!ValueQ[G[0,0,0]],																							(* 18.11.2024 *)
 	Do[G[i,j,k]=Sum[vg[k,m](D[ng[i,m],x[j]]+D[ng[j,m],x[i]]-D[ng[i,j],x[m]])/2,{m,0,3}]//FS;
 		(*If[G[i,j,k]=!=0,Print[SPB[\[CapitalGamma],SF["````",i,j],SF["  ``",k]],"  =  ",G[i,j,k]];];*)
 		G[j,i,k]=G[i,j,k],{i,0,3},{j,i,3},{k,0,3}];
@@ -359,7 +358,7 @@ standart:=Block[{},
 	Definition[G]>>>mathoutput;
 	Definition[R]>>>mathoutput;
 	Definition[RR]>>>mathoutput;
-	];
+	
 ];
 
 standart;
@@ -372,10 +371,10 @@ FoF[ #[it_,jt_]@__, SPS[#, Sfitjt]] & /@ {G};																		(* 18.11.2024 *)
 (* for what? - for synchronyzation of 2 branches. we try to imrove calculus for both branches *)
 
 (* ======================= ACTIONS =========================*)
-
+(*
 maxw1t;
 LorentzGauge;
-	
+*)	
 
 
 (* ======================= TERMINATION =========================*)
